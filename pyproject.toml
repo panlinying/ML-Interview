@@ -1,7 +1,20 @@
 [project]
 name = "ml-interview"
 version = "0.1.0"
-description = "Add your description here"
+description = "ML Interview Preparation - A 10-week Obsidian vault curriculum"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+
+[project.scripts]
+ml-interview = "ml_interview:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ml_interview"]
+
+[dependency-groups]
+dev = []

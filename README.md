@@ -23,7 +23,7 @@ ML-Interview/
 ├── 20-Daily/               # 70 daily task notes
 ├── 30-ML-Fundamentals/     # ML theory content
 ├── 40-ML-System-Design/    # System design guides
-├── run.py                  # Note generator utility
+├── ml_interview/           # Python package
 └── ml_interview_detailed_guide.md  # Source curriculum
 ```
 
@@ -44,22 +44,42 @@ ML-Interview/
 4. **Challenge** harder variation without hints (45 min)
 5. **Review** next day from memory (15 min)
 
+## Installation
+
+This project uses [UV](https://docs.astral.sh/uv/) for Python package management.
+
+```bash
+# Install UV (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and setup
+git clone https://github.com/panlinying/ML-Interview.git
+cd ML-Interview
+uv sync
+```
+
 ## Regenerating Notes
 
 If you modify the curriculum, regenerate the daily notes:
 
 ```bash
-# Basic usage
-python run.py ml_interview_detailed_guide.md
+# Using UV (recommended)
+uv run ml-interview ml_interview_detailed_guide.md
 
 # With options
-python run.py ml_interview_detailed_guide.md \
+uv run ml-interview ml_interview_detailed_guide.md \
   --out . \
   --days 7 \
   --start 2026-01-12
 
 # Force overwrite existing notes
-python run.py ml_interview_detailed_guide.md --force
+uv run ml-interview ml_interview_detailed_guide.md --force
+
+# Or run as a module
+uv run python -m ml_interview ml_interview_detailed_guide.md
+
+# Or use the convenience script directly
+uv run python run.py ml_interview_detailed_guide.md
 ```
 
 ### CLI Options
@@ -71,10 +91,12 @@ python run.py ml_interview_detailed_guide.md --force
 | `--days` | Days per week to split into | 5 |
 | `--start` | Start date (YYYY-MM-DD) | None (uses "Week X - Day Y" naming) |
 | `--force` | Overwrite existing day notes | False |
+| `--version` | Show version number | - |
 
 ## Requirements
 
 - Python 3.13+
+- [UV](https://docs.astral.sh/uv/) (for package management)
 - Obsidian (for viewing the vault)
 
 ## Curriculum Highlights
