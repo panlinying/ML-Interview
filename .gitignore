@@ -14,6 +14,11 @@ wheels/
 venv/
 ENV/
 
+# Node.js
+node_modules/
+public/
+.quartz-cache/
+
 # IDE
 .idea/
 .vscode/
@@ -34,3 +39,6 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Quartz template (temporary)
+.quartz-template/

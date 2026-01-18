@@ -1,6 +1,10 @@
 # ML Interview Preparation
 
+[![GitHub Pages](https://img.shields.io/badge/View%20Online-GitHub%20Pages-blue)](https://panlinying.github.io/ML-Interview/)
+
 A comprehensive 10-week ML engineer interview preparation system designed as an Obsidian vault.
+
+**View online:** https://panlinying.github.io/ML-Interview/
 
 ## Overview
 
