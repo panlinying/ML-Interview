@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { basePath } from '@/lib/basePath'
+import { docHref } from '@/lib/basePath'
 
 export default function Home() {
   return (
@@ -15,7 +15,7 @@ export default function Home() {
 
       <div className="grid md:grid-cols-2 gap-6 mb-12">
         <Link
-          href={`${basePath}/docs/00-Reference%2FStart%20Here`}
+          href={docHref('00-Reference/Start Here')}
           className="block p-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white hover:from-blue-600 hover:to-blue-700 transition-all"
         >
           <h2 className="text-xl font-semibold mb-2">Start Here →</h2>
@@ -23,7 +23,7 @@ export default function Home() {
         </Link>
 
         <Link
-          href={`${basePath}/docs/00-Reference%2FExecution%20Playbook%20(Optimized)`}
+          href={docHref('00-Reference/Execution Playbook (Optimized)')}
           className="block p-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white hover:from-purple-600 hover:to-purple-700 transition-all"
         >
           <h2 className="text-xl font-semibold mb-2">Execution Playbook →</h2>
@@ -65,7 +65,7 @@ export default function Home() {
             ].map(item => (
               <Link
                 key={item.slug}
-                href={`${basePath}/docs/${encodeURIComponent(item.slug)}`}
+                href={docHref(item.slug)}
                 className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
               >
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

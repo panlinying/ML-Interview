@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTheme } from './ThemeProvider'
-import { basePath } from '@/lib/basePath'
+import { docHref } from '@/lib/basePath'
 
 interface SearchResult {
   title: string
@@ -152,7 +152,7 @@ export function Header() {
                 {results.map(result => (
                   <Link
                     key={result.slug}
-                    href={`${basePath}/docs/${encodeURIComponent(result.slug)}`}
+                    href={docHref(result.slug)}
                     onClick={() => {
                       setSearchOpen(false)
                       setQuery('')

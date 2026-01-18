@@ -122,3 +122,23 @@ export function getNavigation(): NavItem[] {
 export function getAllSlugs(): string[] {
   return getAllMarkdownFiles().map(f => f.slug)
 }
+
+// Resolve a wiki link (file name or title) to its full slug
+export function resolveWikiLink(linkText: string): string | null {
+  const files = getAllMarkdownFiles()
+  
+  // Try to find by exact filename match (without extension)
+  const byFileName = files.find(f => {
+    const fileName = f.slug.split('/').pop()
+    return fileName === linkText
+  })
+  
+  if (byFileName) return byFileName.slug
+  
+  // Try to find by title match
+  const byTitle = files.find(f => f.title === linkText)
+  if (byTitle) return byTitle.slug
+  
+  // Return null if not found
+  return null
+}

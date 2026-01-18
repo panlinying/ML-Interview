@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
 import Link from 'next/link'
-import { basePath } from '@/lib/basePath'
+import { basePath, docHref } from '@/lib/basePath'
 
 interface Props {
   content: string
@@ -13,16 +13,6 @@ interface Props {
 
 export function MarkdownRenderer({ content }: Props) {
   const docsPrefix = `${basePath}/docs/`
-
-  // Convert Obsidian wiki links [[link]] to markdown links
-  const processedContent = content.replace(
-    /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-    (_, link, text) => {
-      const displayText = text || link
-      const slug = link.replace(/\.md$/, '')
-      return `[${displayText}](${docsPrefix}${encodeURIComponent(slug)})`
-    }
-  )
 
   return (
     <div className="prose prose-gray dark:prose-invert max-w-none">
@@ -86,7 +76,7 @@ export function MarkdownRenderer({ content }: Props) {
           },
         }}
       >
-        {processedContent}
+        {content}
       </ReactMarkdown>
     </div>
   )

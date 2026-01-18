@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { basePath, homeHref } from '@/lib/basePath'
+import { docHref, homeHref } from '@/lib/basePath'
 
 interface NavItem {
   title: string
@@ -129,7 +129,7 @@ export function Sidebar() {
                 {expanded[section.slug] && section.children && (
                   <div className="ml-3 mt-1 space-y-1">
                     {section.children.map(item => {
-                      const href = `${basePath}/docs/${encodeURIComponent(item.slug)}`
+                      const href = docHref(item.slug)
                       const isActive = pathname === href
 
                       return (
