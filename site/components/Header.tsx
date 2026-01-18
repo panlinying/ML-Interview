@@ -168,7 +168,7 @@ export function Header() {
 
             {query && results.length === 0 && (
               <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             )}
           </div>
