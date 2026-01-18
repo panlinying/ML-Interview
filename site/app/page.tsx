@@ -1,6 +1,5 @@
 import Link from 'next/link'
-
-const basePath = '/ML-Interview'
+import { basePath } from '@/lib/basePath'
 
 export default function Home() {
   return (

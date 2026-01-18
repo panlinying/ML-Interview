@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { basePath, homeHref } from '@/lib/basePath'
 
 interface NavItem {
   title: string
@@ -73,8 +74,6 @@ export function Sidebar() {
     setExpanded(prev => ({ ...prev, [slug]: !prev[slug] }))
   }
 
-  const basePath = '/ML-Interview'
-
   return (
     <>
       {/* Mobile menu button */}
@@ -102,7 +101,7 @@ export function Sidebar() {
         }`}
       >
         <div className="p-6">
-          <Link href={basePath} className="block mb-6">
+          <Link href={homeHref} className="block mb-6">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
               ML Interview Prep
             </h1>

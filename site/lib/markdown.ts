@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 
+const contentRoot = path.resolve(process.cwd(), '..', 'content')
 const contentDirs = ['00-Reference', '10-Weeks', '20-Daily', '30-ML-Fundamentals', '40-ML-System-Design']
 
 export interface MarkdownFile {
@@ -19,7 +20,7 @@ export interface NavItem {
   children?: NavItem[]
 }
 
-function getFilesRecursively(dir: string, baseDir: string): string[] {
+function getFilesRecursively(dir: string): string[] {
   const files: string[] = []
 
   if (!fs.existsSync(dir)) return files
@@ -31,7 +32,7 @@ function getFilesRecursively(dir: string, baseDir: string): string[] {
     const stat = fs.statSync(fullPath)
 
     if (stat.isDirectory()) {
-      files.push(...getFilesRecursively(fullPath, baseDir))
+      files.push(...getFilesRecursively(fullPath))
     } else if (item.endsWith('.md')) {
       files.push(fullPath)
     }
@@ -42,14 +43,12 @@ function getFilesRecursively(dir: string, baseDir: string): string[] {
 
 export function getAllMarkdownFiles(): MarkdownFile[] {
   const files: MarkdownFile[] = []
-  const rootDir = process.cwd()
-
   for (const contentDir of contentDirs) {
-    const dirPath = path.join(rootDir, contentDir)
-    const mdFiles = getFilesRecursively(dirPath, contentDir)
+    const dirPath = path.join(contentRoot, contentDir)
+    const mdFiles = getFilesRecursively(dirPath)
 
     for (const filePath of mdFiles) {
-      const relativePath = path.relative(rootDir, filePath)
+      const relativePath = path.relative(contentRoot, filePath)
       const slug = relativePath.replace(/\.md$/, '').replace(/\\/g, '/')
       const fileContent = fs.readFileSync(filePath, 'utf-8')
       const { data, content } = matter(fileContent)

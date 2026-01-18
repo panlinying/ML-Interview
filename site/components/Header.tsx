@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useTheme } from './ThemeProvider'
+import { basePath } from '@/lib/basePath'
 
 interface SearchResult {
   title: string
@@ -16,8 +17,6 @@ export function Header() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const searchRef = useRef<HTMLDivElement>(null)
-
-  const basePath = '/ML-Interview'
 
   // Close search on click outside
   useEffect(() => {

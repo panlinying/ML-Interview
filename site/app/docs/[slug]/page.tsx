@@ -1,9 +1,8 @@
 import { getAllMarkdownFiles, getMarkdownBySlug } from '@/lib/markdown'
 import { MarkdownRenderer } from '@/components/MarkdownRenderer'
+import { basePath, homeHref } from '@/lib/basePath'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-
-const basePath = '/ML-Interview'
 
 export async function generateStaticParams() {
   const files = getAllMarkdownFiles()
@@ -45,7 +44,7 @@ export default function DocPage({ params }: { params: { slug: string } }) {
     <article className="max-w-4xl mx-auto">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-        <Link href={basePath} className="hover:text-gray-700 dark:hover:text-gray-200">
+        <Link href={homeHref} className="hover:text-gray-700 dark:hover:text-gray-200">
           Home
         </Link>
         {breadcrumbs.map((crumb, i) => (
@@ -71,7 +70,7 @@ export default function DocPage({ params }: { params: { slug: string } }) {
       {/* Footer navigation */}
       <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
         <Link
-          href={basePath}
+          href={homeHref}
           className="text-blue-600 dark:text-blue-400 hover:underline"
         >
           ← Back to Home

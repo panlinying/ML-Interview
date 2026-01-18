@@ -18,24 +18,22 @@ This project provides a structured curriculum covering:
 
 ```
 ML-Interview/
-├── 00-Reference/           # Navigation & reference guides
-│   ├── Start Here.md       # Entry point
-│   ├── Calendar Map.md     # 10-week calendar overview
-│   ├── Execution Playbook  # Learning methodology
-│   └── Quick Reference     # Curated resource links
-├── 10-Weeks/               # Weekly overview notes
-├── 20-Daily/               # 70 daily task notes
-├── 30-ML-Fundamentals/     # ML theory content
-├── 40-ML-System-Design/    # System design guides
-├── ml_interview/           # Python package
-└── ml_interview_detailed_guide.md  # Source curriculum
+├── content/                # Obsidian vault content
+│   ├── 00-Reference/
+│   ├── 10-Weeks/
+│   ├── 20-Daily/
+│   ├── 30-ML-Fundamentals/
+│   ├── 40-ML-System-Design/
+│   └── ml_interview_detailed_guide.md
+├── site/                   # Next.js site
+└── ml_interview/           # Python package
 ```
 
 ## Getting Started
 
 ### Using the Vault
 
-1. Open this folder as an Obsidian vault
+1. Open `content/` as an Obsidian vault
 2. Start with `00-Reference/Start Here.md`
 3. Navigate to today's date in `Calendar Map`
 4. Follow the `Execution Playbook` methodology
@@ -68,22 +66,22 @@ If you modify the curriculum, regenerate the daily notes:
 
 ```bash
 # Using UV (recommended)
-uv run ml-interview ml_interview_detailed_guide.md
+uv run ml-interview content/ml_interview_detailed_guide.md --out content
 
 # With options
-uv run ml-interview ml_interview_detailed_guide.md \
-  --out . \
+uv run ml-interview content/ml_interview_detailed_guide.md \
+  --out content \
   --days 7 \
   --start 2026-01-12
 
 # Force overwrite existing notes
-uv run ml-interview ml_interview_detailed_guide.md --force
+uv run ml-interview content/ml_interview_detailed_guide.md --out content --force
 
 # Or run as a module
-uv run python -m ml_interview ml_interview_detailed_guide.md
+uv run python -m ml_interview content/ml_interview_detailed_guide.md --out content
 
 # Or use the convenience script directly
-uv run python run.py ml_interview_detailed_guide.md
+uv run python run.py content/ml_interview_detailed_guide.md --out content
 ```
 
 ### CLI Options
@@ -102,6 +100,26 @@ uv run python run.py ml_interview_detailed_guide.md
 - Python 3.13+
 - [UV](https://docs.astral.sh/uv/) (for package management)
 - Obsidian (for viewing the vault)
+
+## Deployment
+
+### GitHub Pages
+
+This repo uses a `/ML-Interview` base path. The GitHub Actions workflow sets:
+
+```
+NEXT_PUBLIC_BASE_PATH=/ML-Interview
+```
+
+### Vercel
+
+Set the project's Root Directory to `site` and define:
+
+```
+NEXT_PUBLIC_BASE_PATH=
+```
+
+Leave it empty to deploy at the root domain.
 
 ## Curriculum Highlights
 
