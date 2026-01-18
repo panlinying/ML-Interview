@@ -2,6 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "if [ \"$VERCEL_ENV\" = \"preview\" ]; then npm run lint; fi; npm run build",
   "outputDirectory": "out",
-  "installCommand": "npm ci",
-  "rootDirectory": "site"
+  "installCommand": "npm ci"
 }
