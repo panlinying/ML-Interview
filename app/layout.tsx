@@ -1,0 +1,37 @@
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { Sidebar } from '@/components/Sidebar'
+import { Header } from '@/components/Header'
+import { ThemeProvider } from '@/components/ThemeProvider'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'ML Interview Prep',
+  description: 'A 10-week ML engineer interview preparation system',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider>
+          <div className="flex min-h-screen bg-white dark:bg-gray-900">
+            <Sidebar />
+            <div className="flex-1 flex flex-col lg:ml-72">
+              <Header />
+              <main className="flex-1 p-6 lg:p-8">
+                {children}
+              </main>
+            </div>
+          </div>
+        </ThemeProvider>
+      </body>
+    </html>
+  )
+}

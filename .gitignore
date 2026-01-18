@@ -16,8 +16,10 @@ ENV/
 
 # Node.js
 node_modules/
-public/
-.quartz-cache/
+
+# Next.js
+.next/
+out/
 
 # IDE
 .idea/
@@ -36,9 +38,10 @@ Thumbs.db
 # Local development
 *.local
 .env
+.env*.local
 
 # Claude Code
 .claude/
 
-# Quartz template (temporary)
-.quartz-template/
+# Vercel
+.vercel
