@@ -57,15 +57,16 @@ export default function DocPage({ params }: { params: { slug: string[] } }) {
   return (
     <article className="max-w-4xl mx-auto">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-        <Link href={homeHref} className="hover:text-gray-700 dark:hover:text-gray-200">
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
+        <Link href={homeHref} className="hover:text-foreground transition-colors">
           Home
         </Link>
         {breadcrumbs.map((crumb, i) => (
           <span key={crumb.path} className="flex items-center gap-2">
-            <span>/</span>
-            {/* Only the last breadcrumb is shown, intermediate paths are not clickable */}
-            <span className={i === breadcrumbs.length - 1 ? "text-gray-700 dark:text-gray-200" : "text-gray-500 dark:text-gray-400"}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className={i === breadcrumbs.length - 1 ? "text-foreground font-medium" : ""}>
               {crumb.name}
             </span>
           </span>
@@ -76,12 +77,15 @@ export default function DocPage({ params }: { params: { slug: string[] } }) {
       <MarkdownRenderer content={processedContent} />
 
       {/* Footer navigation */}
-      <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-12 pt-6 border-t border-border">
         <Link
           href={homeHref}
-          className="text-blue-600 dark:text-blue-400 hover:underline"
+          className="inline-flex items-center gap-2 text-primary hover:underline"
         >
-          ← Back to Home
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Home
         </Link>
       </div>
     </article>

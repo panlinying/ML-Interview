@@ -123,22 +123,25 @@ export function getAllSlugs(): string[] {
   return getAllMarkdownFiles().map(f => f.slug)
 }
 
-// Resolve a wiki link (file name or title) to its full slug
+// Resolve a wiki link (file name, path, or title) to its full slug
 export function resolveWikiLink(linkText: string): string | null {
   const files = getAllMarkdownFiles()
-  
+
+  // Try to find by exact slug match (full path like "20-Daily/2026-01-12")
+  const bySlug = files.find(f => f.slug === linkText)
+  if (bySlug) return bySlug.slug
+
   // Try to find by exact filename match (without extension)
   const byFileName = files.find(f => {
     const fileName = f.slug.split('/').pop()
     return fileName === linkText
   })
-  
   if (byFileName) return byFileName.slug
-  
+
   // Try to find by title match
   const byTitle = files.find(f => f.title === linkText)
   if (byTitle) return byTitle.slug
-  
+
   // Return null if not found
   return null
 }
