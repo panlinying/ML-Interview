@@ -1,5 +1,6 @@
 import { getAllMarkdownFiles, getMarkdownBySlug, resolveWikiLink } from '@/lib/markdown'
 import { MarkdownRenderer } from '@/components/MarkdownRenderer'
+import { DocEngagement } from '@/components/DocEngagement'
 import { docHref, homeHref } from '@/lib/basePath'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -75,6 +76,8 @@ export default function DocPage({ params }: { params: { slug: string[] } }) {
 
       {/* Content */}
       <MarkdownRenderer content={processedContent} />
+
+      <DocEngagement contentSlug={file.slug} />
 
       {/* Footer navigation */}
       <div className="mt-12 pt-6 border-t border-border">

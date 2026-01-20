@@ -124,8 +124,8 @@ def sanitize_string(value: str, max_length: int = 10000) -> str:
 
 def validate_slug(slug: str) -> str:
     """Validate and sanitize a content slug."""
-    # Only allow alphanumeric, hyphens, underscores, and forward slashes
-    if not re.match(r'^[\w\-/]+$', slug):
+    # Allow common filename characters used in the curriculum.
+    if not re.match(r'^[\w\s/.,()+&-]+$', slug):
         raise HTTPException(status_code=400, detail="Invalid slug format")
     return slug[:255]  # Limit length
 
@@ -199,8 +199,8 @@ class PageViewCreate(BaseModel):
     def validate_path(cls, v):
         if not v or len(v) > 500:
             raise ValueError("Invalid path")
-        # Only allow safe path characters
-        if not re.match(r'^[\w\-/\.]+$', v):
+        # Allow encoded URL paths and common filename characters.
+        if not re.match(r'^[\w\s/.,()+&%-]+$', v):
             raise ValueError("Invalid path format")
         return v
 

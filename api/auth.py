@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import httpx
 from fastapi import APIRouter, HTTPException, Depends, Request, Header
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import jwt
@@ -138,8 +139,17 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def normalize_redirect(redirect_to: Optional[str]) -> Optional[str]:
+    """Allow only redirects back to the configured app URL."""
+    if not redirect_to:
+        return None
+    if not redirect_to.startswith(APP_URL):
+        return None
+    return redirect_to
+
+
 @router.get("/github")
-def github_login(db=Depends(get_db)):
+def github_login(redirect_to: Optional[str] = None, db=Depends(get_db)):
     """Start GitHub OAuth flow."""
     if not GITHUB_CLIENT_ID:
         raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
@@ -148,11 +158,16 @@ def github_login(db=Depends(get_db)):
     state = secrets.token_urlsafe(32)
     state_hash = hash_token(state)
 
+    session_data = {"type": "oauth_state"}
+    safe_redirect = normalize_redirect(redirect_to)
+    if safe_redirect:
+        session_data["redirect_to"] = safe_redirect
+
     session = Session(
         token_hash=state_hash,
         user_id=None,
         expires_at=datetime.utcnow() + timedelta(minutes=10),
-        data={"type": "oauth_state"}
+        data=session_data
     )
     db.add(session)
     db.commit()
@@ -245,6 +260,11 @@ async def github_callback(code: str, state: str, db=Depends(get_db)):
 
     # Create JWT token
     jwt_token = create_jwt_token(user.id, user.email)
+
+    redirect_to = session.data.get("redirect_to") if session.data else None
+    if redirect_to:
+        separator = "&" if "?" in redirect_to else "?"
+        return RedirectResponse(f"{redirect_to}{separator}token={jwt_token}")
 
     return TokenResponse(
         access_token=jwt_token,
