@@ -68,7 +68,7 @@ For a local, customizable experience:
 
 ## Installation
 
-This project uses [UV](https://docs.astral.sh/uv/) for Python package management.
+This project uses [UV](https://docs.astral.sh/uv/) for Python dependency management.
 
 ```bash
 # Install UV (if not already installed)
@@ -77,7 +77,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Clone and setup
 git clone https://github.com/panlinying/ML-Interview.git
 cd ML-Interview
+
+# Install all dependencies
 uv sync
+
+# Verify installation
+uv run python -c "import httpx; print('✅ Dependencies installed successfully')"
 ```
 
 ## Regenerating Notes
