@@ -187,6 +187,64 @@ NEXT_PUBLIC_BASE_PATH=/ML-Interview npm run build
 
 The GitHub Actions workflow automatically sets this for the `/ML-Interview` base path.
 
+### Environment Variables
+
+The backend API requires the following environment variables. Copy `.env.example` to `.env.local` for local development:
+
+```bash
+cp .env.example .env.local
+```
+
+#### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | Neon/Postgres connection string | `postgresql://user:pass@host/db?sslmode=require` |
+| `JWT_SECRET` | Secret for JWT tokens (min 32 chars) | Generate with `openssl rand -hex 32` |
+| `ADMIN_SECRET` | Secret for admin endpoints | Generate with `openssl rand -hex 32` |
+| `APP_URL` | Your app's public URL | `https://www.aceinterview.online` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `https://www.aceinterview.online` |
+
+#### OAuth Variables (Optional)
+
+| Variable | Description | Where to get |
+|----------|-------------|--------------|
+| `GITHUB_CLIENT_ID` | GitHub OAuth App ID | [GitHub Developer Settings](https://github.com/settings/developers) |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App Secret | Same as above |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Same as above |
+
+#### Adding Variables to Vercel
+
+**Option 1: CLI**
+```bash
+# Add each variable
+echo "your-value" | npx vercel env add VARIABLE_NAME production
+
+# Example
+echo "https://www.aceinterview.online" | npx vercel env add APP_URL production
+```
+
+**Option 2: Dashboard**
+1. Go to [Vercel Project Settings](https://vercel.com) → Your Project → Settings
+2. Navigate to "Environment Variables"
+3. Add each variable for Production/Preview/Development
+
+**Option 3: Pull existing variables**
+```bash
+# Pull all env vars to .env.local
+npx vercel env pull
+```
+
+#### OAuth Callback URLs
+
+When setting up OAuth apps, use these callback URLs:
+
+- **GitHub:** `https://your-domain.com/api/auth/github/callback`
+- **Google:** `https://your-domain.com/api/auth/google/callback`
+
+For local development, create separate OAuth apps with `http://localhost:3000` callbacks.
+
 ## Features
 
 ### Web Interface

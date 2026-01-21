@@ -221,6 +221,23 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    setAuthError(null)
+    try {
+      const callbackUrl = new URL(`${basePath}/auth/callback`, window.location.origin)
+      if (pathname) {
+        callbackUrl.searchParams.set('returnTo', pathname)
+      }
+      const login = await apiRequest<{ url: string }>(
+        `/api/auth/google?redirect_to=${encodeURIComponent(callbackUrl.toString())}`
+      )
+      window.location.href = login.url
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to start Google login'
+      setAuthError(message)
+    }
+  }
+
   const handleSaveProgress = async () => {
     if (!authToken || !user?.authenticated) {
       setProgressError('Sign in to save progress')
@@ -311,6 +328,9 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleGithubLogin}>Continue with GitHub</Button>
+              <Button variant="outline" onClick={handleGoogleLogin}>
+                Continue with Google
+              </Button>
             </div>
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">

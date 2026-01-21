@@ -23,6 +23,8 @@ security = HTTPBearer(auto_error=False)
 # Environment variables
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 APP_URL = os.environ.get("APP_URL", "http://localhost:3000")
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
@@ -259,6 +261,114 @@ async def github_callback(code: str, state: str, db=Depends(get_db)):
         db.refresh(user)
 
     # Create JWT token
+    jwt_token = create_jwt_token(user.id, user.email)
+
+    redirect_to = session.data.get("redirect_to") if session.data else None
+    if redirect_to:
+        separator = "&" if "?" in redirect_to else "?"
+        return RedirectResponse(f"{redirect_to}{separator}token={jwt_token}")
+
+    return TokenResponse(
+        access_token=jwt_token,
+        expires_in=JWT_EXPIRATION_HOURS * 3600,
+        user_id=user.id,
+        user_name=user.name,
+        user_email=user.email,
+    )
+
+
+@router.get("/google")
+def google_login(redirect_to: Optional[str] = None, db=Depends(get_db)):
+    """Start Google OAuth flow."""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+
+    state = secrets.token_urlsafe(32)
+    state_hash = hash_token(state)
+
+    session_data = {"type": "oauth_state", "provider": "google"}
+    safe_redirect = normalize_redirect(redirect_to)
+    if safe_redirect:
+        session_data["redirect_to"] = safe_redirect
+
+    session = Session(
+        token_hash=state_hash,
+        user_id=None,
+        expires_at=datetime.utcnow() + timedelta(minutes=10),
+        data=session_data
+    )
+    db.add(session)
+    db.commit()
+
+    google_url = (
+        "https://accounts.google.com/o/oauth2/v2/auth"
+        f"?client_id={GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={APP_URL}/api/auth/google/callback"
+        "&response_type=code"
+        "&scope=openid%20email%20profile"
+        f"&state={state}"
+        "&include_granted_scopes=true"
+    )
+    return {"url": google_url}
+
+
+@router.get("/google/callback")
+async def google_callback(code: str, state: str, db=Depends(get_db)):
+    """Handle Google OAuth callback."""
+    state_hash = hash_token(state)
+    session = db.query(Session).filter(
+        Session.token_hash == state_hash,
+        Session.expires_at > datetime.utcnow()
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=400, detail="Invalid or expired state")
+
+    db.delete(session)
+    db.commit()
+
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "code": code,
+                "redirect_uri": f"{APP_URL}/api/auth/google/callback",
+                "grant_type": "authorization_code",
+            },
+            headers={"Accept": "application/json"},
+            timeout=10.0,
+        )
+        token_data = token_response.json()
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Failed to get access token")
+
+    async with httpx.AsyncClient() as client:
+        user_response = await client.get(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10.0,
+        )
+        google_user = user_response.json()
+
+    email = google_user.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Could not get email from Google")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(
+            email=email,
+            name=google_user.get("name") or email,
+            image=google_user.get("picture"),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     jwt_token = create_jwt_token(user.id, user.email)
 
     redirect_to = session.data.get("redirect_to") if session.data else None
