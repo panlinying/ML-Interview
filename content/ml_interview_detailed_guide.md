@@ -31,16 +31,16 @@ Step 5: Next day - redo 1 problem from memory (15 min)
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #1 | Two Sum | Easy | Hash Map | https://www.youtube.com/watch?v=KLlXCFG5TnA |
-| 2 | LC #121 | Best Time to Buy and Sell Stock | Easy | Sliding Window | https://www.youtube.com/watch?v=1pkOgXD63yU |
-| 3 | LC #217 | Contains Duplicate | Easy | Hash Set | https://www.youtube.com/watch?v=3OamzN90kPg |
-| 4 | LC #238 | Product of Array Except Self | Medium | Prefix/Suffix | https://www.youtube.com/watch?v=bNvIQI2wAjk |
-| 5 | LC #53 | Maximum Subarray | Medium | Kadane's | https://www.youtube.com/watch?v=5WZl3MMT0Eg |
-| 6 | LC #152 | Maximum Product Subarray | Medium | DP/Kadane's | https://www.youtube.com/watch?v=lXVy6YWFcRM |
-| 7 | LC #153 | Find Minimum in Rotated Sorted Array | Medium | Binary Search | https://www.youtube.com/watch?v=nIVW4P8b1VA |
-| 8 | LC #33 | Search in Rotated Sorted Array | Medium | Binary Search | https://www.youtube.com/watch?v=U8XENwh8Oy8 |
-| 9 | LC #11 | Container With Most Water | Medium | Two Pointers | https://www.youtube.com/watch?v=UuiTKBwPgAo |
-| 10 | LC #15 | 3Sum | Medium | Two Pointers | https://www.youtube.com/watch?v=jzZsG8n2R9A |
+| 1 | LC #1 | `tag:Two Sum` | Easy | `tag:Hash Map` | https://www.youtube.com/watch?v=KLlXCFG5TnA |
+| 2 | LC #121 | `tag:Best Time to Buy and Sell Stock` | Easy | `tag:Sliding Window` | https://www.youtube.com/watch?v=1pkOgXD63yU |
+| 3 | LC #217 | `tag:Contains Duplicate` | Easy | `tag:Hash Set` | https://www.youtube.com/watch?v=3OamzN90kPg |
+| 4 | LC #238 | `tag:Product of Array Except Self` | Medium | `tag:Prefix/Suffix` | https://www.youtube.com/watch?v=bNvIQI2wAjk |
+| 5 | LC #53 | `tag:Maximum Subarray` | Medium | `tag:Kadane's` | https://www.youtube.com/watch?v=5WZl3MMT0Eg |
+| 6 | LC #152 | `tag:Maximum Product Subarray` | Medium | `tag:DP/Kadane's` | https://www.youtube.com/watch?v=lXVy6YWFcRM |
+| 7 | LC #153 | `tag:Find Minimum in Rotated Sorted Array` | Medium | `tag:Binary Search` | https://www.youtube.com/watch?v=nIVW4P8b1VA |
+| 8 | LC #33 | `tag:Search in Rotated Sorted Array` | Medium | `tag:Binary Search` | https://www.youtube.com/watch?v=U8XENwh8Oy8 |
+| 9 | LC #11 | `tag:Container With Most Water` | Medium | `tag:Two Pointers` | https://www.youtube.com/watch?v=UuiTKBwPgAo |
+| 10 | LC #15 | `tag:3Sum` | Medium | `tag:Two Pointers` | https://www.youtube.com/watch?v=jzZsG8n2R9A |
 
 **How to solve each:**
 ```
@@ -69,14 +69,14 @@ LC #11 (Container With Most Water):
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #242 | Valid Anagram | Easy | Hash Map Count | https://www.youtube.com/watch?v=9UtInBqnCgA |
-| 2 | LC #49 | Group Anagrams | Medium | Hash Map + Sort | https://www.youtube.com/watch?v=vzdNOK2oB2E |
-| 3 | LC #347 | Top K Frequent Elements | Medium | Hash Map + Heap | https://www.youtube.com/watch?v=YPTqKIgVk-k |
-| 4 | LC #271 | Encode and Decode Strings | Medium | Delimiter | https://www.youtube.com/watch?v=B1k_sxOSgv8 |
-| 5 | LC #128 | Longest Consecutive Sequence | Medium | Hash Set | https://www.youtube.com/watch?v=P6RZZMu_maU |
-| 6 | LC #146 | LRU Cache | Medium | Hash Map + DLL | https://www.youtube.com/watch?v=7ABFKPK2hD4 |
-| 7 | LC #380 | Insert Delete GetRandom O(1) | Medium | Hash Map + Array | https://www.youtube.com/watch?v=j4KwhBziOpg |
-| 8 | LC #560 | Subarray Sum Equals K | Medium | Prefix Sum + Map | https://www.youtube.com/watch?v=fFVZt-6sgyo |
+| 1 | LC #242 | `tag:Valid Anagram` | Easy | `tag:Hash Map Count` | https://www.youtube.com/watch?v=9UtInBqnCgA |
+| 2 | LC #49 | `tag:Group Anagrams` | Medium | `tag:Hash Map + Sort` | https://www.youtube.com/watch?v=vzdNOK2oB2E |
+| 3 | LC #347 | `tag:Top K Frequent Elements` | Medium | `tag:Hash Map + Heap` | https://www.youtube.com/watch?v=YPTqKIgVk-k |
+| 4 | LC #271 | `tag:Encode and Decode Strings` | Medium | `tag:Delimiter` | https://www.youtube.com/watch?v=B1k_sxOSgv8 |
+| 5 | LC #128 | `tag:Longest Consecutive Sequence` | Medium | `tag:Hash Set` | https://www.youtube.com/watch?v=P6RZZMu_maU |
+| 6 | LC #146 | `tag:LRU Cache` | Medium | `tag:Hash Map + DLL` | https://www.youtube.com/watch?v=7ABFKPK2hD4 |
+| 7 | LC #380 | `tag:Insert Delete GetRandom O(1)` | Medium | `tag:Hash Map + Array` | https://www.youtube.com/watch?v=j4KwhBziOpg |
+| 8 | LC #560 | `tag:Subarray Sum Equals K` | Medium | `tag:Prefix Sum + Map` | https://www.youtube.com/watch?v=fFVZt-6sgyo |
 
 **Key Templates:**
 
@@ -110,13 +110,13 @@ for item in items:
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #206 | Reverse Linked List | Easy | Iterative/Recursive | https://www.youtube.com/watch?v=G0_I-ZF0S38 |
-| 2 | LC #21 | Merge Two Sorted Lists | Easy | Two Pointers | https://www.youtube.com/watch?v=XIdigk956u0 |
-| 3 | LC #141 | Linked List Cycle | Easy | Fast/Slow Pointer | https://www.youtube.com/watch?v=gBTe7lFR3vc |
-| 4 | LC #142 | Linked List Cycle II | Medium | Floyd's Algorithm | https://www.youtube.com/watch?v=wjYnzkAhcNk |
-| 5 | LC #143 | Reorder List | Medium | Multiple Techniques | https://www.youtube.com/watch?v=S5bfdUTrKLM |
-| 6 | LC #19 | Remove Nth Node From End | Medium | Two Pointers | https://www.youtube.com/watch?v=XVuQxVej6y8 |
-| 7 | LC #23 | Merge K Sorted Lists | Hard | Heap/Divide Conquer | https://www.youtube.com/watch?v=q5a5OiGbT6Q |
+| 1 | LC #206 | `tag:Reverse Linked List` | Easy | `tag:Iterative/Recursive` | https://www.youtube.com/watch?v=G0_I-ZF0S38 |
+| 2 | LC #21 | `tag:Merge Two Sorted Lists` | Easy | `tag:Two Pointers` | https://www.youtube.com/watch?v=XIdigk956u0 |
+| 3 | LC #141 | `tag:Linked List Cycle` | Easy | `tag:Fast/Slow Pointer` | https://www.youtube.com/watch?v=gBTe7lFR3vc |
+| 4 | LC #142 | `tag:Linked List Cycle II` | Medium | `tag:Floyd's Algorithm` | https://www.youtube.com/watch?v=wjYnzkAhcNk |
+| 5 | LC #143 | `tag:Reorder List` | Medium | `tag:Multiple Techniques` | https://www.youtube.com/watch?v=S5bfdUTrKLM |
+| 6 | LC #19 | `tag:Remove Nth Node From End` | Medium | `tag:Two Pointers` | https://www.youtube.com/watch?v=XVuQxVej6y8 |
+| 7 | LC #23 | `tag:Merge K Sorted Lists` | Hard | `tag:Heap/Divide Conquer` | https://www.youtube.com/watch?v=q5a5OiGbT6Q |
 
 **Key Templates:**
 
@@ -160,18 +160,18 @@ return dummy.next
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #226 | Invert Binary Tree | Easy | DFS Recursive | https://www.youtube.com/watch?v=OnSn2XEQ4MY |
-| 2 | LC #104 | Maximum Depth of Binary Tree | Easy | DFS | https://www.youtube.com/watch?v=hTM3phVI6YQ |
-| 3 | LC #100 | Same Tree | Easy | DFS Compare | https://www.youtube.com/watch?v=vRbbcKXCxOw |
-| 4 | LC #572 | Subtree of Another Tree | Easy | DFS + Same Tree | https://www.youtube.com/watch?v=E36O5SWp-LE |
-| 5 | LC #102 | Binary Tree Level Order Traversal | Medium | BFS | https://www.youtube.com/watch?v=6ZnyEApgFYg |
-| 6 | LC #199 | Binary Tree Right Side View | Medium | BFS | https://www.youtube.com/watch?v=d4zLyf32e3I |
-| 7 | LC #98 | Validate Binary Search Tree | Medium | DFS + Range | https://www.youtube.com/watch?v=s6ATEkipzow |
-| 8 | LC #230 | Kth Smallest Element in BST | Medium | Inorder | https://www.youtube.com/watch?v=5LUXSvjmGCw |
-| 9 | LC #235 | Lowest Common Ancestor of BST | Medium | BST Property | https://www.youtube.com/watch?v=gs2LMfuOR9k |
-| 10 | LC #236 | Lowest Common Ancestor of BT | Medium | DFS | https://www.youtube.com/watch?v=py3R23aAPCA |
-| 11 | LC #297 | Serialize and Deserialize BT | Hard | BFS/DFS | https://www.youtube.com/watch?v=u4JAi2JJhI8 |
-| 12 | LC #124 | Binary Tree Maximum Path Sum | Hard | DFS + Global Max | https://www.youtube.com/watch?v=Hr5cWUld4vU |
+| 1 | LC #226 | `tag:Invert Binary Tree` | Easy | `tag:DFS Recursive` | https://www.youtube.com/watch?v=OnSn2XEQ4MY |
+| 2 | LC #104 | `tag:Maximum Depth of Binary Tree` | Easy | `tag:DFS` | https://www.youtube.com/watch?v=hTM3phVI6YQ |
+| 3 | LC #100 | `tag:Same Tree` | Easy | `tag:DFS Compare` | https://www.youtube.com/watch?v=vRbbcKXCxOw |
+| 4 | LC #572 | `tag:Subtree of Another Tree` | Easy | `tag:DFS + Same Tree` | https://www.youtube.com/watch?v=E36O5SWp-LE |
+| 5 | LC #102 | `tag:Binary Tree Level Order Traversal` | Medium | `tag:BFS` | https://www.youtube.com/watch?v=6ZnyEApgFYg |
+| 6 | LC #199 | `tag:Binary Tree Right Side View` | Medium | `tag:BFS` | https://www.youtube.com/watch?v=d4zLyf32e3I |
+| 7 | LC #98 | `tag:Validate Binary Search Tree` | Medium | `tag:DFS + Range` | https://www.youtube.com/watch?v=s6ATEkipzow |
+| 8 | LC #230 | `tag:Kth Smallest Element in BST` | Medium | `tag:Inorder` | https://www.youtube.com/watch?v=5LUXSvjmGCw |
+| 9 | LC #235 | `tag:Lowest Common Ancestor of BST` | Medium | `tag:BST Property` | https://www.youtube.com/watch?v=gs2LMfuOR9k |
+| 10 | LC #236 | `tag:Lowest Common Ancestor of BT` | Medium | `tag:DFS` | https://www.youtube.com/watch?v=py3R23aAPCA |
+| 11 | LC #297 | `tag:Serialize and Deserialize BT` | Hard | `tag:BFS/DFS` | https://www.youtube.com/watch?v=u4JAi2JJhI8 |
+| 12 | LC #124 | `tag:Binary Tree Maximum Path Sum` | Hard | `tag:DFS + Global Max` | https://www.youtube.com/watch?v=Hr5cWUld4vU |
 
 **Key Templates:**
 
@@ -224,14 +224,14 @@ def isValidBST(root, min_val=float('-inf'), max_val=float('inf')):
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #200 | Number of Islands | Medium | DFS/BFS Grid | https://www.youtube.com/watch?v=pV2kpPD66nE |
-| 2 | LC #695 | Max Area of Island | Medium | DFS Grid | https://www.youtube.com/watch?v=iJGr1OtmH0c |
-| 3 | LC #133 | Clone Graph | Medium | DFS + HashMap | https://www.youtube.com/watch?v=mQeF6bN8hMk |
-| 4 | LC #417 | Pacific Atlantic Water Flow | Medium | Multi-source DFS | https://www.youtube.com/watch?v=s-VkcjHqkGI |
-| 5 | LC #207 | Course Schedule | Medium | Topological Sort | https://www.youtube.com/watch?v=EgI5nU9etnU |
-| 6 | LC #210 | Course Schedule II | Medium | Topological Sort | https://www.youtube.com/watch?v=Akt3glAwyfY |
-| 7 | LC #994 | Rotting Oranges | Medium | Multi-source BFS | https://www.youtube.com/watch?v=y704fEOx0s0 |
-| 8 | LC #286 | Walls and Gates | Medium | Multi-source BFS | https://www.youtube.com/watch?v=e69C6xhiSQE |
+| 1 | LC #200 | `tag:Number of Islands` | Medium | `tag:DFS/BFS Grid` | https://www.youtube.com/watch?v=pV2kpPD66nE |
+| 2 | LC #695 | `tag:Max Area of Island` | Medium | `tag:DFS Grid` | https://www.youtube.com/watch?v=iJGr1OtmH0c |
+| 3 | LC #133 | `tag:Clone Graph` | Medium | `tag:DFS + HashMap` | https://www.youtube.com/watch?v=mQeF6bN8hMk |
+| 4 | LC #417 | `tag:Pacific Atlantic Water Flow` | Medium | `tag:Multi-source DFS` | https://www.youtube.com/watch?v=s-VkcjHqkGI |
+| 5 | LC #207 | `tag:Course Schedule` | Medium | `tag:Topological Sort` | https://www.youtube.com/watch?v=EgI5nU9etnU |
+| 6 | LC #210 | `tag:Course Schedule II` | Medium | `tag:Topological Sort` | https://www.youtube.com/watch?v=Akt3glAwyfY |
+| 7 | LC #994 | `tag:Rotting Oranges` | Medium | `tag:Multi-source BFS` | https://www.youtube.com/watch?v=y704fEOx0s0 |
+| 8 | LC #286 | `tag:Walls and Gates` | Medium | `tag:Multi-source BFS` | https://www.youtube.com/watch?v=e69C6xhiSQE |
 
 **Key Templates:**
 
@@ -326,13 +326,13 @@ def bfs_grid(grid, start_i, start_j):
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #70 | Climbing Stairs | Easy | Fibonacci-style | https://www.youtube.com/watch?v=Y0lT9Fck7qI |
-| 2 | LC #746 | Min Cost Climbing Stairs | Easy | Min path | https://www.youtube.com/watch?v=ktmzAZWkEZ0 |
-| 3 | LC #198 | House Robber | Medium | Skip pattern | https://www.youtube.com/watch?v=73r3KWiEvyk |
-| 4 | LC #213 | House Robber II | Medium | Circular array | https://www.youtube.com/watch?v=rWAJCfYYOvM |
-| 5 | LC #5 | Longest Palindromic Substring | Medium | Expand center | https://www.youtube.com/watch?v=XYQecbcd6_c |
-| 6 | LC #647 | Palindromic Substrings | Medium | Expand center | https://www.youtube.com/watch?v=4RACzI5-du8 |
-| 7 | LC #91 | Decode Ways | Medium | Count paths | https://www.youtube.com/watch?v=6aEyTjOwlJU |
+| 1 | LC #70 | `tag:Climbing Stairs` | Easy | `tag:Fibonacci-style` | https://www.youtube.com/watch?v=Y0lT9Fck7qI |
+| 2 | LC #746 | `tag:Min Cost Climbing Stairs` | Easy | `tag:Min path` | https://www.youtube.com/watch?v=ktmzAZWkEZ0 |
+| 3 | LC #198 | `tag:House Robber` | Medium | `tag:Skip pattern` | https://www.youtube.com/watch?v=73r3KWiEvyk |
+| 4 | LC #213 | `tag:House Robber II` | Medium | `tag:Circular array` | https://www.youtube.com/watch?v=rWAJCfYYOvM |
+| 5 | LC #5 | `tag:Longest Palindromic Substring` | Medium | `tag:Expand center` | https://www.youtube.com/watch?v=XYQecbcd6_c |
+| 6 | LC #647 | `tag:Palindromic Substrings` | Medium | `tag:Expand center` | https://www.youtube.com/watch?v=4RACzI5-du8 |
+| 7 | LC #91 | `tag:Decode Ways` | Medium | `tag:Count paths` | https://www.youtube.com/watch?v=6aEyTjOwlJU |
 
 **Template: 1D DP**
 ```python
@@ -364,12 +364,12 @@ def rob_optimized(nums):
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #62 | Unique Paths | Medium | Grid DP | https://www.youtube.com/watch?v=IlEsdxuD4lY |
-| 2 | LC #63 | Unique Paths II | Medium | Grid DP + obstacles | https://www.youtube.com/watch?v=d3UOz7zdE4I |
-| 3 | LC #64 | Minimum Path Sum | Medium | Grid DP | https://www.youtube.com/watch?v=pGMsrvt0fpk |
-| 4 | LC #72 | Edit Distance | Medium | String DP | https://www.youtube.com/watch?v=XYi2-LPrwm4 |
-| 5 | LC #1143 | Longest Common Subsequence | Medium | String DP | https://www.youtube.com/watch?v=Ua0GhsJSlWM |
-| 6 | LC #97 | Interleaving String | Medium | String DP | https://www.youtube.com/watch?v=3Rw3p9LrgvE |
+| 1 | LC #62 | `tag:Unique Paths` | Medium | `tag:Grid DP` | https://www.youtube.com/watch?v=IlEsdxuD4lY |
+| 2 | LC #63 | `tag:Unique Paths II` | Medium | `tag:Grid DP + obstacles` | https://www.youtube.com/watch?v=d3UOz7zdE4I |
+| 3 | LC #64 | `tag:Minimum Path Sum` | Medium | `tag:Grid DP` | https://www.youtube.com/watch?v=pGMsrvt0fpk |
+| 4 | LC #72 | `tag:Edit Distance` | Medium | `tag:String DP` | https://www.youtube.com/watch?v=XYi2-LPrwm4 |
+| 5 | LC #1143 | `tag:Longest Common Subsequence` | Medium | `tag:String DP` | https://www.youtube.com/watch?v=Ua0GhsJSlWM |
+| 6 | LC #97 | `tag:Interleaving String` | Medium | `tag:String DP` | https://www.youtube.com/watch?v=3Rw3p9LrgvE |
 
 **Template: 2D DP**
 ```python
@@ -413,12 +413,12 @@ def minDistance(word1, word2):
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #322 | Coin Change | Medium | Unbounded knapsack | https://www.youtube.com/watch?v=H9bfqozjoqs |
-| 2 | LC #518 | Coin Change II | Medium | Count combinations | https://www.youtube.com/watch?v=Mjy4hd2xgrs |
-| 3 | LC #300 | Longest Increasing Subsequence | Medium | LIS | https://www.youtube.com/watch?v=cjWnW0hdF1Y |
-| 4 | LC #139 | Word Break | Medium | String DP | https://www.youtube.com/watch?v=Sx9NNgInc3A |
-| 5 | LC #416 | Partition Equal Subset Sum | Medium | 0/1 Knapsack | https://www.youtube.com/watch?v=IsvocB5BJhw |
-| 6 | LC #494 | Target Sum | Medium | 0/1 Knapsack | https://www.youtube.com/watch?v=g0npyaQtAQM |
+| 1 | LC #322 | `tag:Coin Change` | Medium | `tag:Unbounded knapsack` | https://www.youtube.com/watch?v=H9bfqozjoqs |
+| 2 | LC #518 | `tag:Coin Change II` | Medium | `tag:Count combinations` | https://www.youtube.com/watch?v=Mjy4hd2xgrs |
+| 3 | LC #300 | `tag:Longest Increasing Subsequence` | Medium | `tag:LIS` | https://www.youtube.com/watch?v=cjWnW0hdF1Y |
+| 4 | LC #139 | `tag:Word Break` | Medium | `tag:String DP` | https://www.youtube.com/watch?v=Sx9NNgInc3A |
+| 5 | LC #416 | `tag:Partition Equal Subset Sum` | Medium | `tag:0/1 Knapsack` | https://www.youtube.com/watch?v=IsvocB5BJhw |
+| 6 | LC #494 | `tag:Target Sum` | Medium | `tag:0/1 Knapsack` | https://www.youtube.com/watch?v=g0npyaQtAQM |
 
 **Template: Knapsack**
 ```python
@@ -454,9 +454,9 @@ def coinChange(coins, amount):
 
 | # | LeetCode | Problem Name | Difficulty | Video Solution |
 |---|----------|--------------|------------|----------------|
-| 1 | LC #152 | Maximum Product Subarray | Medium | https://www.youtube.com/watch?v=lXVy6YWFcRM |
-| 2 | LC #309 | Best Time Buy Sell with Cooldown | Medium | https://www.youtube.com/watch?v=I7j0F7AHpb8 |
-| 3 | LC #312 | Burst Balloons | Hard | https://www.youtube.com/watch?v=VFskby7lUbw |
+| 1 | LC #152 | `tag:Maximum Product Subarray` `tag:DP` | Medium | https://www.youtube.com/watch?v=lXVy6YWFcRM |
+| 2 | LC #309 | `tag:Best Time Buy Sell with Cooldown` `tag:DP` | Medium | https://www.youtube.com/watch?v=I7j0F7AHpb8 |
+| 3 | LC #312 | `tag:Burst Balloons` `tag:DP` | Hard | https://www.youtube.com/watch?v=VFskby7lUbw |
 
 ---
 
@@ -470,12 +470,12 @@ def coinChange(coins, amount):
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #743 | Network Delay Time | Medium | Dijkstra | https://www.youtube.com/watch?v=EaphyqKU4PQ |
-| 2 | LC #787 | Cheapest Flights Within K Stops | Medium | Bellman-Ford | https://www.youtube.com/watch?v=5eIK3zUdYmE |
-| 3 | LC #684 | Redundant Connection | Medium | Union Find | https://www.youtube.com/watch?v=FXWRE67PLL0 |
-| 4 | LC #323 | Number of Connected Components | Medium | Union Find | https://www.youtube.com/watch?v=8f1XPm4WOUc |
-| 5 | LC #261 | Graph Valid Tree | Medium | Union Find | https://www.youtube.com/watch?v=bXsUuownnoQ |
-| 6 | LC #127 | Word Ladder | Hard | BFS | https://www.youtube.com/watch?v=h9iTnkgv05E |
+| 1 | LC #743 | `tag:Network Delay Time` | Medium | `tag:Dijkstra` | https://www.youtube.com/watch?v=EaphyqKU4PQ |
+| 2 | LC #787 | `tag:Cheapest Flights Within K Stops` | Medium | `tag:Bellman-Ford` | https://www.youtube.com/watch?v=5eIK3zUdYmE |
+| 3 | LC #684 | `tag:Redundant Connection` | Medium | `tag:Union Find` | https://www.youtube.com/watch?v=FXWRE67PLL0 |
+| 4 | LC #323 | `tag:Number of Connected Components` | Medium | `tag:Union Find` | https://www.youtube.com/watch?v=8f1XPm4WOUc |
+| 5 | LC #261 | `tag:Graph Valid Tree` | Medium | `tag:Union Find` | https://www.youtube.com/watch?v=bXsUuownnoQ |
+| 6 | LC #127 | `tag:Word Ladder` | Hard | `tag:BFS` | https://www.youtube.com/watch?v=h9iTnkgv05E |
 
 **Template: Dijkstra's**
 ```python
@@ -531,12 +531,12 @@ class UnionFind:
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #703 | Kth Largest Element in Stream | Easy | Min Heap | https://www.youtube.com/watch?v=hOjcdrqMoQ8 |
-| 2 | LC #215 | Kth Largest Element in Array | Medium | Quick Select/Heap | https://www.youtube.com/watch?v=XEmy13g1Qxc |
-| 3 | LC #621 | Task Scheduler | Medium | Max Heap + Cooldown | https://www.youtube.com/watch?v=s8p8ukTyA2I |
-| 4 | LC #355 | Design Twitter | Medium | Merge K + Heap | https://www.youtube.com/watch?v=pNichitDD2E |
-| 5 | LC #295 | Find Median from Data Stream | Hard | Two Heaps | https://www.youtube.com/watch?v=itmhHWaHupI |
-| 6 | LC #23 | Merge K Sorted Lists | Hard | Min Heap | https://www.youtube.com/watch?v=q5a5OiGbT6Q |
+| 1 | LC #703 | `tag:Kth Largest Element in Stream` | Easy | `tag:Min Heap` | https://www.youtube.com/watch?v=hOjcdrqMoQ8 |
+| 2 | LC #215 | `tag:Kth Largest Element in Array` | Medium | `tag:Quick Select/Heap` | https://www.youtube.com/watch?v=XEmy13g1Qxc |
+| 3 | LC #621 | `tag:Task Scheduler` | Medium | `tag:Max Heap + Cooldown` | https://www.youtube.com/watch?v=s8p8ukTyA2I |
+| 4 | LC #355 | `tag:Design Twitter` | Medium | `tag:Merge K + Heap` | https://www.youtube.com/watch?v=pNichitDD2E |
+| 5 | LC #295 | `tag:Find Median from Data Stream` | Hard | `tag:Two Heaps` | https://www.youtube.com/watch?v=itmhHWaHupI |
+| 6 | LC #23 | `tag:Merge K Sorted Lists` | Hard | `tag:Min Heap` | https://www.youtube.com/watch?v=q5a5OiGbT6Q |
 
 **Template: Two Heaps (Median)**
 ```python
@@ -574,10 +574,10 @@ class MedianFinder:
 
 | # | LeetCode | Problem Name | Difficulty | Video Solution |
 |---|----------|--------------|------------|----------------|
-| 1 | LC #208 | Implement Trie | Medium | https://www.youtube.com/watch?v=oobqoCJlHA0 |
-| 2 | LC #211 | Design Add and Search Words | Medium | https://www.youtube.com/watch?v=BTf05gs_8iU |
-| 3 | LC #212 | Word Search II | Hard | https://www.youtube.com/watch?v=asbcE9mZz_U |
-| 4 | LC #14 | Longest Common Prefix | Easy | https://www.youtube.com/watch?v=0sWShKIJoo4 |
+| 1 | LC #208 | `tag:Implement Trie` `tag:Trie` | Medium | https://www.youtube.com/watch?v=oobqoCJlHA0 |
+| 2 | LC #211 | `tag:Design Add and Search Words` `tag:Trie` | Medium | https://www.youtube.com/watch?v=BTf05gs_8iU |
+| 3 | LC #212 | `tag:Word Search II` `tag:Trie` | Hard | https://www.youtube.com/watch?v=asbcE9mZz_U |
+| 4 | LC #14 | `tag:Longest Common Prefix` `tag:Trie` | Easy | https://www.youtube.com/watch?v=0sWShKIJoo4 |
 
 **Template: Trie**
 ```python
@@ -621,12 +621,12 @@ class Trie:
 
 | # | LeetCode | Problem Name | Difficulty | Pattern | Video Solution |
 |---|----------|--------------|------------|---------|----------------|
-| 1 | LC #704 | Binary Search | Easy | Standard | https://www.youtube.com/watch?v=s4DPM8ct1pI |
-| 2 | LC #74 | Search a 2D Matrix | Medium | 2D → 1D | https://www.youtube.com/watch?v=Ber2pi2C0j0 |
-| 3 | LC #875 | Koko Eating Bananas | Medium | Search on Answer | https://www.youtube.com/watch?v=U2SozAs9RzA |
-| 4 | LC #153 | Find Min in Rotated Array | Medium | Modified BS | https://www.youtube.com/watch?v=nIVW4P8b1VA |
-| 5 | LC #33 | Search in Rotated Array | Medium | Modified BS | https://www.youtube.com/watch?v=U8XENwh8Oy8 |
-| 6 | LC #4 | Median of Two Sorted Arrays | Hard | Binary Search | https://www.youtube.com/watch?v=q6IEA26hvXc |
+| 1 | LC #704 | `tag:Binary Search` | Easy | `tag:Standard` | https://www.youtube.com/watch?v=s4DPM8ct1pI |
+| 2 | LC #74 | `tag:Search a 2D Matrix` | Medium | `tag:2D → 1D` | https://www.youtube.com/watch?v=Ber2pi2C0j0 |
+| 3 | LC #875 | `tag:Koko Eating Bananas` | Medium | `tag:Search on Answer` | https://www.youtube.com/watch?v=U2SozAs9RzA |
+| 4 | LC #153 | `tag:Find Min in Rotated Array` | Medium | `tag:Modified BS` | https://www.youtube.com/watch?v=nIVW4P8b1VA |
+| 5 | LC #33 | `tag:Search in Rotated Array` | Medium | `tag:Modified BS` | https://www.youtube.com/watch?v=U8XENwh8Oy8 |
+| 6 | LC #4 | `tag:Median of Two Sorted Arrays` | Hard | `tag:Binary Search` | https://www.youtube.com/watch?v=q6IEA26hvXc |
 
 **Template: Binary Search on Answer**
 ```python
@@ -652,22 +652,22 @@ def minEatingSpeed(piles, h):
 
 | # | LeetCode | Problem Name | Difficulty | Video Solution |
 |---|----------|--------------|------------|----------------|
-| 1 | LC #20 | Valid Parentheses | Easy | https://www.youtube.com/watch?v=WTzjTskDFMg |
-| 2 | LC #155 | Min Stack | Medium | https://www.youtube.com/watch?v=qkLl7nAwDPo |
-| 3 | LC #150 | Evaluate Reverse Polish Notation | Medium | https://www.youtube.com/watch?v=iu0082c4HDE |
-| 4 | LC #739 | Daily Temperatures | Medium | https://www.youtube.com/watch?v=cTBiBSnjO3c |
-| 5 | LC #853 | Car Fleet | Medium | https://www.youtube.com/watch?v=Pr6T-3yB9RM |
-| 6 | LC #84 | Largest Rectangle in Histogram | Hard | https://www.youtube.com/watch?v=zx5Sw9130L0 |
+| 1 | LC #20 | `tag:Valid Parentheses` `tag:Stack & Monotonic Stack` | Easy | https://www.youtube.com/watch?v=WTzjTskDFMg |
+| 2 | LC #155 | `tag:Min Stack` `tag:Stack & Monotonic Stack` | Medium | https://www.youtube.com/watch?v=qkLl7nAwDPo |
+| 3 | LC #150 | `tag:Evaluate Reverse Polish Notation` `tag:Stack & Monotonic Stack` | Medium | https://www.youtube.com/watch?v=iu0082c4HDE |
+| 4 | LC #739 | `tag:Daily Temperatures` `tag:Stack & Monotonic Stack` | Medium | https://www.youtube.com/watch?v=cTBiBSnjO3c |
+| 5 | LC #853 | `tag:Car Fleet` `tag:Stack & Monotonic Stack` | Medium | https://www.youtube.com/watch?v=Pr6T-3yB9RM |
+| 6 | LC #84 | `tag:Largest Rectangle in Histogram` `tag:Stack & Monotonic Stack` | Hard | https://www.youtube.com/watch?v=zx5Sw9130L0 |
 
 ### Intervals
 
 | # | LeetCode | Problem Name | Difficulty | Video Solution |
 |---|----------|--------------|------------|----------------|
-| 1 | LC #57 | Insert Interval | Medium | https://www.youtube.com/watch?v=A8NUOmlwOlM |
-| 2 | LC #56 | Merge Intervals | Medium | https://www.youtube.com/watch?v=44H3cEC2fFM |
-| 3 | LC #435 | Non-overlapping Intervals | Medium | https://www.youtube.com/watch?v=nONCGxWoUfM |
-| 4 | LC #252 | Meeting Rooms | Easy | https://www.youtube.com/watch?v=PaJxqZVPhbg |
-| 5 | LC #253 | Meeting Rooms II | Medium | https://www.youtube.com/watch?v=FdzJmTCVyJU |
+| 1 | LC #57 | `tag:Insert Interval` `tag:Intervals` | Medium | https://www.youtube.com/watch?v=A8NUOmlwOlM |
+| 2 | LC #56 | `tag:Merge Intervals` `tag:Intervals` | Medium | https://www.youtube.com/watch?v=44H3cEC2fFM |
+| 3 | LC #435 | `tag:Non-overlapping Intervals` `tag:Intervals` | Medium | https://www.youtube.com/watch?v=nONCGxWoUfM |
+| 4 | LC #252 | `tag:Meeting Rooms` `tag:Intervals` | Easy | https://www.youtube.com/watch?v=PaJxqZVPhbg |
+| 5 | LC #253 | `tag:Meeting Rooms II` `tag:Intervals` | Medium | https://www.youtube.com/watch?v=FdzJmTCVyJU |
 
 ### Backtracking
 
@@ -676,14 +676,14 @@ def minEatingSpeed(piles, h):
 
 | # | LeetCode | Problem Name | Difficulty | Video Solution |
 |---|----------|--------------|------------|----------------|
-| 1 | LC #78 | Subsets | Medium | https://www.youtube.com/watch?v=REOH22Xwdkk |
-| 2 | LC #90 | Subsets II | Medium | https://www.youtube.com/watch?v=Vn2v6ajA7U0 |
-| 3 | LC #46 | Permutations | Medium | https://www.youtube.com/watch?v=s7AvT7cGdSo |
-| 4 | LC #39 | Combination Sum | Medium | https://www.youtube.com/watch?v=GBKI9VSKdGg |
-| 5 | LC #40 | Combination Sum II | Medium | https://www.youtube.com/watch?v=rSA3t6BDDwg |
-| 6 | LC #79 | Word Search | Medium | https://www.youtube.com/watch?v=pfiQ_PS1g8E |
-| 7 | LC #131 | Palindrome Partitioning | Medium | https://www.youtube.com/watch?v=3jvWodd7ht0 |
-| 8 | LC #51 | N-Queens | Hard | https://www.youtube.com/watch?v=Ph95IHmRp5M |
+| 1 | LC #78 | `tag:Subsets` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=REOH22Xwdkk |
+| 2 | LC #90 | `tag:Subsets II` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=Vn2v6ajA7U0 |
+| 3 | LC #46 | `tag:Permutations` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=s7AvT7cGdSo |
+| 4 | LC #39 | `tag:Combination Sum` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=GBKI9VSKdGg |
+| 5 | LC #40 | `tag:Combination Sum II` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=rSA3t6BDDwg |
+| 6 | LC #79 | `tag:Word Search` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=pfiQ_PS1g8E |
+| 7 | LC #131 | `tag:Palindrome Partitioning` `tag:Backtracking` | Medium | https://www.youtube.com/watch?v=3jvWodd7ht0 |
+| 8 | LC #51 | `tag:N-Queens` `tag:Backtracking` | Hard | https://www.youtube.com/watch?v=Ph95IHmRp5M |
 
 **Template: Backtracking**
 ```python

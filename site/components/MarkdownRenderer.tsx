@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
 import Link from 'next/link'
+import { badgeVariants } from '@/components/ui/badge'
 import { basePath, docHref } from '@/lib/basePath'
 import { cn } from '@/lib/utils'
 
@@ -47,11 +48,22 @@ export function MarkdownRenderer({ content, className }: Props) {
             }
             return <a href={href}>{children}</a>
           },
-          code: ({ className, children, ...props }) => {
+          code: ({ className, children, node, ...props }) => {
             const match = /language-(\w+)/.exec(className || '')
             const isInline = !match
+            const raw = String(children).trim()
 
             if (isInline) {
+              if (raw.startsWith('tag:')) {
+                const label = raw.slice(4).trim()
+                if (label) {
+                  return (
+                    <span className={cn(badgeVariants({ variant: 'outline' }), 'text-xs font-medium')}>
+                      {label}
+                    </span>
+                  )
+                }
+              }
               return (
                 <code
                   className="bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono"

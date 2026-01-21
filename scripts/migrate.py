@@ -39,6 +39,26 @@ def run_migrations() -> None:
         CREATE INDEX IF NOT EXISTS comment_votes_user_id_idx
         ON comment_votes(user_id);
         """,
+        """
+        CREATE TABLE IF NOT EXISTS questions (
+          id SERIAL PRIMARY KEY,
+          question_type VARCHAR(50) NOT NULL,
+          leetcode_number INTEGER,
+          problem_name VARCHAR(500) NOT NULL,
+          difficulty VARCHAR(50),
+          pattern VARCHAR(255),
+          video_solution TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT now()
+        );
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS questions_question_type_idx
+        ON questions(question_type);
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS questions_leetcode_number_idx
+        ON questions(leetcode_number);
+        """,
     ]
 
     engine = create_engine(get_database_url(), pool_pre_ping=True)

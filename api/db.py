@@ -95,6 +95,19 @@ class PageView(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
+class Question(Base):
+    __tablename__ = "questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_type = Column(String(50), nullable=False, index=True)
+    leetcode_number = Column(Integer, nullable=True, index=True)
+    problem_name = Column(String(500), nullable=False)
+    difficulty = Column(String(50))
+    pattern = Column(String(255))
+    video_solution = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Session(Base):
     """Store OAuth state tokens and other temporary session data."""
     __tablename__ = "sessions"

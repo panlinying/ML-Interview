@@ -30,6 +30,75 @@ interface SearchIndex {
   items: SearchItem[]
 }
 
+let cachedItems: SearchItem[] | null = null
+let cachedFuse: Fuse<SearchItem> | null = null
+let inFlight: Promise<{ items: SearchItem[]; fuse: Fuse<SearchItem> }> | null = null
+
+const buildFuse = (items: SearchItem[]) =>
+  new Fuse(items, {
+    keys: [
+      { name: 'title', weight: 2 },
+      { name: 'pageTitle', weight: 1.5 },
+      { name: 'body', weight: 0.5 },
+      { name: 'category', weight: 0.3 },
+    ],
+    threshold: 0.3,
+    includeScore: true,
+    minMatchCharLength: 2,
+  })
+
+async function loadSearchIndex(): Promise<{ items: SearchItem[]; fuse: Fuse<SearchItem> }> {
+  if (cachedItems && cachedFuse) {
+    return { items: cachedItems, fuse: cachedFuse }
+  }
+
+  if (inFlight) {
+    return inFlight
+  }
+
+  inFlight = (async () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = window.sessionStorage.getItem('search-index')
+        if (cached) {
+          const parsed = JSON.parse(cached) as SearchIndex
+          if (parsed?.items?.length) {
+            cachedItems = parsed.items
+            cachedFuse = buildFuse(parsed.items)
+            return { items: cachedItems, fuse: cachedFuse }
+          }
+        }
+      } catch {
+        // Ignore cache parsing errors.
+      }
+    }
+
+    const res = await fetch(`${basePath}/search-index.json`, { cache: 'force-cache' })
+    if (!res.ok) {
+      throw new Error(`Failed to load search index (${res.status})`)
+    }
+    const data: SearchIndex = await res.json()
+    cachedItems = data.items
+    cachedFuse = buildFuse(data.items)
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.setItem('search-index', JSON.stringify(data))
+      } catch {
+        // Ignore storage write errors.
+      }
+    }
+
+    return { items: cachedItems, fuse: cachedFuse }
+  })()
+
+  try {
+    return await inFlight
+  } finally {
+    inFlight = null
+  }
+}
+
 export function SearchCommand() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -40,30 +109,21 @@ export function SearchCommand() {
 
   // Load search index on mount
   useEffect(() => {
-    async function loadSearchIndex() {
-      try {
-        const res = await fetch(`${basePath}/search-index.json`)
-        const data: SearchIndex = await res.json()
-        setSearchIndex(data.items)
-
-        // Initialize Fuse.js
-        const fuseInstance = new Fuse(data.items, {
-          keys: [
-            { name: 'title', weight: 2 },
-            { name: 'pageTitle', weight: 1.5 },
-            { name: 'body', weight: 0.5 },
-            { name: 'category', weight: 0.3 },
-          ],
-          threshold: 0.3,
-          includeScore: true,
-          minMatchCharLength: 2,
-        })
-        setFuse(fuseInstance)
-      } catch (error) {
-        console.error('Failed to load search index:', error)
-      }
-    }
+    let cancelled = false
     loadSearchIndex()
+      .then(({ items, fuse }) => {
+        if (cancelled) {
+          return
+        }
+        setSearchIndex(items)
+        setFuse(fuse)
+      })
+      .catch((error) => {
+        console.error('Failed to load search index:', error)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Keyboard shortcut to open
