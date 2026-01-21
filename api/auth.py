@@ -8,11 +8,12 @@ import secrets
 import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
+from urllib.parse import urlparse
 import httpx
-from fastapi import APIRouter, HTTPException, Depends, Request, Header
+from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import jwt
 
 from .db import get_db, User, Session
@@ -60,6 +61,41 @@ class UserResponse(BaseModel):
     email: Optional[str] = None
     name: Optional[str] = None
     image: Optional[str] = None
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    image: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError("Name must be a string")
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("Name cannot be empty")
+        trimmed = trimmed[:120]
+        return trimmed
+
+    @field_validator("image")
+    @classmethod
+    def validate_image(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Avatar URL must be a string")
+        trimmed = value.strip()
+        if not trimmed:
+            return None
+        if len(trimmed) > 2048:
+            raise ValueError("Avatar URL is too long")
+        parsed = urlparse(trimmed)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError("Avatar URL must be http or https")
+        return trimmed
 
 
 def create_jwt_token(user_id: int, email: str) -> str:
@@ -404,6 +440,37 @@ def get_me(user: Optional[User] = Depends(get_current_user_optional)):
     """Get current logged in user."""
     if not user:
         return UserResponse(authenticated=False)
+
+    return UserResponse(
+        authenticated=True,
+        user_id=user.id,
+        email=user.email,
+        name=user.name,
+        image=user.image,
+    )
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    updates: UserUpdate,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Update the current user's profile."""
+    has_update = False
+
+    if "name" in updates.model_fields_set:
+        user.name = updates.name
+        has_update = True
+
+    if "image" in updates.model_fields_set:
+        user.image = updates.image
+        has_update = True
+
+    if has_update:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     return UserResponse(
         authenticated=True,

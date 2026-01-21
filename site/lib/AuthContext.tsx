@@ -33,6 +33,7 @@ type AuthContextType = {
   login: (provider: 'github' | 'google', returnTo?: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
+  updateProfile: (updates: { name?: string; image?: string | null }) => Promise<UserResponse>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -137,6 +138,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const updateProfile = useCallback(
+    async (updates: { name?: string; image?: string | null }) => {
+      if (!token) {
+        throw new Error('Authentication required')
+      }
+      setError(null)
+      try {
+        const updated = await apiRequest<UserResponse>('/api/auth/me', {
+          method: 'PATCH',
+          body: updates,
+          token,
+        })
+
+        if (updated.authenticated) {
+          setUser(updated)
+        } else {
+          clearStoredToken()
+          setToken(null)
+          setUser(null)
+        }
+
+        return updated
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unable to update profile'
+
+        if (message.includes('expired') || message.includes('401') || message.includes('Authentication required')) {
+          clearStoredToken()
+          setToken(null)
+          setUser(null)
+          setError('Session expired. Please sign in again.')
+        }
+        throw err
+      }
+    },
+    [token]
+  )
+
   // Logout and clear session
   const logout = useCallback(() => {
     clearStoredToken()
@@ -154,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     refreshUser,
+    updateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
