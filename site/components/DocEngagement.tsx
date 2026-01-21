@@ -272,10 +272,9 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
     }
 
     roots.sort((a, b) => toTime(b.created_at) - toTime(a.created_at))
-    for (const [parentId, list] of repliesByParent.entries()) {
+    repliesByParent.forEach((list) => {
       list.sort((a, b) => toTime(a.created_at) - toTime(b.created_at))
-      repliesByParent.set(parentId, list)
-    }
+    })
 
     return { roots, repliesByParent }
   }, [comments])
