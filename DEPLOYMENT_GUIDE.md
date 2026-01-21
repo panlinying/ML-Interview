@@ -14,14 +14,19 @@ GitHub Repository (panlinying/ML-Interview)
     │
     └─ Railway ──────────► Auto-deploys Backend (api/)
                           - Runs FastAPI with Uvicorn
-                          - Connects to Neon PostgreSQL
+                          - Connects to Railway PostgreSQL (internal network)
                           - URL: https://ml-interview-production.up.railway.app
+                          
+                          ├─ PostgreSQL Database (same Railway project)
+                             - Internal: postgres.railway.internal:5432
+                             - Public: *.proxy.rlwy.net:PORT
 ```
 
 ## Prerequisites
 
 - GitHub repository: `panlinying/ML-Interview`
-- Neon PostgreSQL database (already configured)
+- Railway account (for backend + PostgreSQL)
+- Vercel account (for frontend)
 - GitHub OAuth app credentials
 - Google OAuth app credentials
 
@@ -42,6 +47,16 @@ GitHub Repository (panlinying/ML-Interview)
    - Use `Procfile` to start the app
    - Deploy to a temporary URL
 
+### Step 1.5: Add PostgreSQL Database
+
+1. In your Railway project dashboard
+2. Click **"+ New"** → **"Database"** → **"Add PostgreSQL"**
+3. Railway will provision a PostgreSQL database
+4. It will auto-generate connection variables:
+   - `DATABASE_URL` (internal - for Railway services)
+   - `DATABASE_PUBLIC_URL` or a public URL with `.railway.app` or `.rlwy.net`
+5. Copy both URLs - you'll need them later
+
 ### Step 2: Generate Public Domain
 
 1. In Railway dashboard, go to your project
@@ -57,8 +72,9 @@ GitHub Repository (panlinying/ML-Interview)
 2. Click **"New Variable"** and add each of these:
 
 ```bash
-# Database (from Neon - copy from your .env.local)
-DATABASE_URL=your_neon_database_url_here
+# Database - Railway will auto-create this when you add PostgreSQL
+# Use the INTERNAL URL (postgres.railway.internal) for production
+DATABASE_URL=postgresql://postgres:PASSWORD@postgres.railway.internal:5432/railway
 
 # Security Secrets (copy from your .env.local)
 JWT_SECRET=your_jwt_secret_here
@@ -76,7 +92,10 @@ APP_URL=https://ml-interview.vercel.app
 ALLOWED_ORIGINS=https://ml-interview.vercel.app
 ```
 
-**Note:** Copy all the secret values from your local `.env.local` file.
+**Important Notes:**
+- Railway auto-creates `DATABASE_URL` when you add PostgreSQL - you may not need to set it manually
+- If you do set it, use the **internal URL** (`postgres.railway.internal`) for better performance
+- Copy all other secret values from your local `.env.local` file
 
 **Note:** Update `API_URL` with your actual Railway domain from Step 2.
 
@@ -267,10 +286,21 @@ git push
 
 Keep these for local development:
 ```bash
+# Use Railway's PUBLIC URL for local development (so your laptop can connect)
+DATABASE_URL=postgresql://postgres:PASSWORD@your-db.proxy.rlwy.net:PORT/railway
+
 API_URL=http://localhost:8000
 APP_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+
+# Copy all other secrets from your .env.local
+JWT_SECRET=your_jwt_secret
+ADMIN_SECRET=your_admin_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ---
@@ -340,13 +370,14 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
 - Unlimited static sites
 - Perfect for documentation sites
 
-### Neon Free Tier
+### Railway PostgreSQL
 
-- 0.5 GB storage
-- 1 project
-- Enough for small user base
+- Included in Railway's $5 monthly credit
+- 1 GB storage on free tier
+- Automatic backups
+- Same network as backend (faster)
 
-**Total Cost:** $0/month for small-scale usage
+**Total Cost:** $0/month for small-scale usage (within Railway's free tier)
 
 ---
 
