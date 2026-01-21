@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
-import { docHref, homeHref } from '@/lib/basePath'
+import { basePath, docHref, homeHref } from '@/lib/basePath'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
@@ -155,10 +155,20 @@ export function Sidebar() {
           {/* Header */}
           <div className="p-6 border-b border-border">
             <Link href={homeHref} className="block" onClick={closeMobileMenu}>
-              <h1 className="text-xl font-bold text-foreground">
-                ML Interview Prep
-              </h1>
-              <p className="text-sm text-muted-foreground">10-Week Curriculum</p>
+              <div className="flex items-center gap-3">
+                <img
+                  src={`${basePath}/logo.svg`}
+                  alt="ML Interview Prep logo"
+                  className="h-11 w-11"
+                  loading="lazy"
+                />
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">
+                    ML Interview Prep
+                  </h1>
+                  <p className="text-sm text-muted-foreground">10-Week Curriculum</p>
+                </div>
+              </div>
             </Link>
           </div>
 
