@@ -212,13 +212,39 @@ def health_check():
     return {"status": "ok", "message": "ML Interview API"}
 
 
+@app.get("/api/health")
+def health_check_detailed():
+    """Detailed health check including database connection."""
+    import os
+    
+    health = {
+        "status": "ok",
+        "database_url_set": bool(os.environ.get("DATABASE_URL")),
+        "admin_secret_set": bool(ADMIN_SECRET),
+        "github_oauth_configured": bool(os.environ.get("GITHUB_CLIENT_ID")),
+        "google_oauth_configured": bool(os.environ.get("GOOGLE_CLIENT_ID")),
+    }
+    
+    # Test database connection
+    try:
+        db = get_session()
+        db.execute("SELECT 1")
+        db.close()
+        health["database_connection"] = "ok"
+    except Exception as e:
+        health["database_connection"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    return health
+
+
 @app.get("/api/init-db")
-def initialize_database(
-    admin_secret: str,
-    db=Depends(get_db)
-):
+def initialize_database(admin_secret: str):
     """Initialize database tables (protected by admin secret)."""
     # Verify admin secret
+    if not ADMIN_SECRET:
+        raise HTTPException(status_code=500, detail="ADMIN_SECRET not configured")
+    
     if admin_secret != ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="Invalid admin secret")
     
@@ -227,8 +253,10 @@ def initialize_database(
         return {"status": "ok", "message": "Database initialized"}
     except Exception as e:
         # Log the error for debugging
-        print(f"Database initialization error: {e}")
-        raise HTTPException(status_code=500, detail="Database initialization failed")
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        print(f"Database initialization error: {error_detail}")
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
 
 
 # --- Progress Routes (Authenticated) ---
