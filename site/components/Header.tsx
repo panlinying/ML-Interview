@@ -1,9 +1,63 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTheme } from './ThemeProvider'
 import { SearchCommand } from './SearchCommand'
 import { Button } from '@/components/ui/button'
 import { AccountButton } from '@/components/AccountButton'
+import { useAuth } from '@/lib/useAuth'
+import { apiRequest } from '@/lib/api'
+
+type StreakData = {
+  current_streak: number
+  streak_active_today: boolean
+}
+
+function StreakIndicator() {
+  const { isAuthenticated, token } = useAuth()
+  const [streak, setStreak] = useState<StreakData | null>(null)
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      setStreak(null)
+      return
+    }
+
+    apiRequest<{ current_streak: number; longest_streak: number; streak_active_today: boolean; completion_percentage: number; total_completed: number; total_content: number; total_comments: number; recent_activity: unknown[] }>(
+      '/api/dashboard',
+      { token }
+    )
+      .then(data => {
+        setStreak({
+          current_streak: data.current_streak,
+          streak_active_today: data.streak_active_today,
+        })
+      })
+      .catch(() => {
+        // Silently fail - streak is not critical
+      })
+  }, [isAuthenticated, token])
+
+  if (!isAuthenticated || !streak) {
+    return null
+  }
+
+  return (
+    <Link
+      href="/dashboard"
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-muted ${
+        streak.streak_active_today
+          ? 'text-orange-500'
+          : 'text-muted-foreground'
+      }`}
+      title={streak.streak_active_today ? 'Streak active today!' : 'Study to keep your streak'}
+    >
+      <span className={streak.streak_active_today ? '' : 'grayscale'}>🔥</span>
+      <span>{streak.current_streak}</span>
+    </Link>
+  )
+}
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
@@ -16,6 +70,9 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Streak indicator */}
+          <StreakIndicator />
+
           {/* GitHub link */}
           <Button variant="ghost" size="icon" asChild>
             <a

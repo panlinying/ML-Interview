@@ -399,6 +399,10 @@ def update_progress(
 
     db.commit()
     db.refresh(progress)
+
+    # Update streak on learning activity
+    update_user_streak(user, db)
+
     return progress
 
 
@@ -501,6 +505,9 @@ def create_comment(
     db.commit()
     db.refresh(comment)
 
+    # Update streak on comment activity
+    update_user_streak(user, db)
+
     return CommentResponse(
         id=comment.id,
         user_id=comment.user_id,
@@ -595,4 +602,127 @@ def get_stats(
     return {
         "total_views": total_views,
         "unique_paths": unique_paths
+    }
+
+
+# --- Streak Helper ---
+
+def update_user_streak(user: User, db) -> None:
+    """
+    Update user's streak based on activity.
+    Call this when user performs any learning activity.
+    """
+    now = datetime.utcnow()
+    today = now.date()
+
+    if user.last_activity_date:
+        last_date = user.last_activity_date.date()
+        days_diff = (today - last_date).days
+
+        if days_diff == 0:
+            # Same day, no streak update needed
+            return
+        elif days_diff == 1:
+            # Consecutive day, increment streak
+            user.current_streak = (user.current_streak or 0) + 1
+        else:
+            # Streak broken, reset to 1
+            user.current_streak = 1
+    else:
+        # First activity
+        user.current_streak = 1
+
+    # Update longest streak if current exceeds it
+    if (user.current_streak or 0) > (user.longest_streak or 0):
+        user.longest_streak = user.current_streak
+
+    user.last_activity_date = now
+    db.commit()
+
+
+# --- Dashboard Routes ---
+
+class DashboardResponse(BaseModel):
+    current_streak: int
+    longest_streak: int
+    completion_percentage: float
+    total_completed: int
+    total_content: int
+    total_comments: int
+    recent_activity: List[dict]
+    streak_active_today: bool
+
+
+# Total content items in curriculum (approximate)
+TOTAL_CONTENT_ITEMS = 98
+
+
+@app.get("/api/dashboard", response_model=DashboardResponse)
+def get_dashboard(
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Get dashboard stats for authenticated user."""
+    check_rate_limit(request, "default", db)
+
+    # Get completion stats
+    completed_count = db.query(Progress).filter(
+        Progress.user_id == user.id,
+        Progress.completed == True
+    ).count()
+
+    # Get comment count
+    comment_count = db.query(Comment).filter(
+        Comment.user_id == user.id
+    ).count()
+
+    # Get recent activity (last 10 progress updates)
+    recent_progress = db.query(Progress).filter(
+        Progress.user_id == user.id
+    ).order_by(Progress.updated_at.desc()).limit(10).all()
+
+    recent_activity = [
+        {
+            "type": "progress",
+            "content_slug": p.content_slug,
+            "completed": p.completed,
+            "updated_at": p.updated_at.isoformat() if p.updated_at else None
+        }
+        for p in recent_progress
+    ]
+
+    # Check if streak is active today
+    today = datetime.utcnow().date()
+    streak_active_today = False
+    if user.last_activity_date:
+        streak_active_today = user.last_activity_date.date() == today
+
+    completion_pct = (completed_count / TOTAL_CONTENT_ITEMS * 100) if TOTAL_CONTENT_ITEMS > 0 else 0
+
+    return DashboardResponse(
+        current_streak=user.current_streak or 0,
+        longest_streak=user.longest_streak or 0,
+        completion_percentage=round(completion_pct, 1),
+        total_completed=completed_count,
+        total_content=TOTAL_CONTENT_ITEMS,
+        total_comments=comment_count,
+        recent_activity=recent_activity,
+        streak_active_today=streak_active_today
+    )
+
+
+@app.post("/api/dashboard/activity")
+def record_activity(
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Record user activity and update streak."""
+    check_rate_limit(request, "default", db)
+    update_user_streak(user, db)
+    return {
+        "current_streak": user.current_streak or 0,
+        "longest_streak": user.longest_streak or 0,
+        "streak_active_today": True
     }

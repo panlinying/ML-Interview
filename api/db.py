@@ -29,6 +29,11 @@ class User(Base):
     image = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Streak tracking
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_activity_date = Column(DateTime, nullable=True)
+
     progress = relationship("Progress", back_populates="user")
     comments = relationship("Comment", back_populates="user")
 
