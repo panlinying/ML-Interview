@@ -118,6 +118,19 @@ class Question(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class ProblemDetail(Base):
+    __tablename__ = "problem_details"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(255), unique=True, nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    description_html = Column(Text, nullable=False)
+    difficulty = Column(String(20))
+    source = Column(String(50), nullable=False, default="leetcode")
+    fetched_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Session(Base):
     """Store OAuth state tokens and other temporary session data."""
     __tablename__ = "sessions"

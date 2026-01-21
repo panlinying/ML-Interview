@@ -9,15 +9,17 @@ import html
 import time
 import uuid
 from datetime import datetime, timedelta
+from html.parser import HTMLParser
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
+import httpx
 from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload
 
-from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, ProblemProgress, init_db
+from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, ProblemProgress, ProblemDetail, init_db
 from .auth import router as auth_router, get_current_user_required, get_current_user_optional, verify_admin_secret
 from .logging_config import setup_logging, get_logger
 
@@ -93,6 +95,7 @@ RATE_LIMITS = {
     "default": (100, 60),      # 100 requests per 60 seconds
     "comments": (10, 60),      # 10 comments per 60 seconds
     "auth": (5, 60),           # 5 auth attempts per 60 seconds
+    "leetcode": (20, 60),      # 20 fetches per 60 seconds
 }
 
 
@@ -173,6 +176,94 @@ def validate_slug(slug: str) -> str:
     if not re.match(r'^[\w\s/.,()+&-]+$', slug):
         raise HTTPException(status_code=400, detail="Invalid slug format")
     return slug[:255]  # Limit length
+
+
+def validate_leetcode_slug(slug: str) -> str:
+    """Validate a LeetCode problem slug."""
+    normalized = slug.strip().lower()
+    if not normalized or len(normalized) > 255:
+        raise HTTPException(status_code=400, detail="Invalid problem slug")
+    if not re.match(r'^[a-z0-9-]+$', normalized):
+        raise HTTPException(status_code=400, detail="Invalid problem slug")
+    return normalized
+
+
+LEETCODE_ALLOWED_TAGS = {
+    "a", "b", "blockquote", "br", "code", "div", "em", "h1", "h2", "h3", "h4",
+    "h5", "h6", "hr", "i", "img", "li", "ol", "p", "pre", "strong", "sub",
+    "sup", "table", "tbody", "td", "th", "thead", "tr", "ul", "span",
+}
+LEETCODE_VOID_TAGS = {"br", "hr", "img"}
+LEETCODE_ALLOWED_ATTRS = {
+    "a": {"href", "title"},
+    "img": {"src", "alt", "title"},
+    "code": {"class"},
+    "pre": {"class"},
+}
+
+
+def _is_safe_link(url: str) -> bool:
+    return url.startswith(("http://", "https://", "/", "#"))
+
+
+def _is_safe_image(url: str) -> bool:
+    return url.startswith(("http://", "https://"))
+
+
+class LeetCodeHTMLSanitizer(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: List[str] = []
+
+    def handle_starttag(self, tag: str, attrs: List[tuple[str, Optional[str]]]) -> None:
+        tag = tag.lower()
+        if tag not in LEETCODE_ALLOWED_TAGS:
+            return
+        attr_text = self._build_attr_text(tag, attrs)
+        self.parts.append(f"<{tag}{attr_text}>")
+
+    def handle_startendtag(self, tag: str, attrs: List[tuple[str, Optional[str]]]) -> None:
+        tag = tag.lower()
+        if tag not in LEETCODE_ALLOWED_TAGS:
+            return
+        attr_text = self._build_attr_text(tag, attrs)
+        self.parts.append(f"<{tag}{attr_text}>")
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in LEETCODE_ALLOWED_TAGS and tag not in LEETCODE_VOID_TAGS:
+            self.parts.append(f"</{tag}>")
+
+    def handle_data(self, data: str) -> None:
+        if data:
+            self.parts.append(html.escape(data))
+
+    def _build_attr_text(self, tag: str, attrs: List[tuple[str, Optional[str]]]) -> str:
+        allowed_attrs = LEETCODE_ALLOWED_ATTRS.get(tag, set())
+        pieces: List[str] = []
+        for key, value in attrs:
+            if value is None:
+                continue
+            key = key.lower()
+            if key not in allowed_attrs:
+                continue
+            if key == "href" and not _is_safe_link(value):
+                continue
+            if key == "src" and not _is_safe_image(value):
+                continue
+            pieces.append(f' {key}="{html.escape(value, quote=True)}"')
+        return "".join(pieces)
+
+
+def sanitize_leetcode_html(raw_html: str, max_length: int = 200000) -> str:
+    """Strip unsafe tags/attrs and normalize HTML from LeetCode."""
+    if not raw_html:
+        return ""
+    trimmed = raw_html[:max_length]
+    parser = LeetCodeHTMLSanitizer()
+    parser.feed(trimmed)
+    parser.close()
+    return "".join(parser.parts)
 
 
 # --- Pydantic Models with Validation ---
@@ -836,6 +927,125 @@ def complete_review(
         "review_count": progress.review_count,
         "next_review_at": progress.next_review_at.isoformat()
     }
+
+
+# --- Problem Details ---
+
+LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
+LEETCODE_QUESTION_QUERY = """
+query questionData($titleSlug: String!) {
+  question(titleSlug: $titleSlug) {
+    title
+    content
+    difficulty
+  }
+}
+"""
+
+
+def fetch_leetcode_problem(slug: str) -> dict:
+    payload = {"query": LEETCODE_QUESTION_QUERY, "variables": {"titleSlug": slug}}
+    headers = {
+        "Content-Type": "application/json",
+        "Referer": f"https://leetcode.com/problems/{slug}/",
+        "User-Agent": "ml-interview/1.0",
+    }
+    try:
+        response = httpx.post(
+            LEETCODE_GRAPHQL_URL,
+            json=payload,
+            headers=headers,
+            timeout=10.0,
+        )
+    except httpx.HTTPError:
+        logger.warning("LeetCode fetch failed", extra={"slug": slug}, exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to fetch problem description.")
+
+    if response.status_code != 200:
+        logger.warning(
+            "LeetCode fetch returned non-200",
+            extra={"slug": slug, "status_code": response.status_code},
+        )
+        raise HTTPException(status_code=502, detail="Failed to fetch problem description.")
+
+    try:
+        payload = response.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Failed to parse problem description.")
+
+    question = payload.get("data", {}).get("question")
+    if not question or not question.get("content"):
+        raise HTTPException(status_code=404, detail="Problem description not found.")
+
+    difficulty = question.get("difficulty")
+    if difficulty:
+        difficulty = difficulty.lower()
+
+    description_html = sanitize_leetcode_html(question.get("content", ""))
+    if not description_html:
+        raise HTTPException(status_code=502, detail="Problem description could not be parsed.")
+
+    return {
+        "title": question.get("title") or slug,
+        "difficulty": difficulty,
+        "description_html": description_html,
+    }
+
+
+class ProblemDetailResponse(BaseModel):
+    slug: str
+    title: str
+    description_html: str
+    difficulty: Optional[str]
+    source: str
+    fetched_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+@app.get("/api/problem-details/{slug}", response_model=ProblemDetailResponse)
+def get_problem_detail(
+    slug: str,
+    request: Request,
+    refresh: bool = False,
+    db=Depends(get_db),
+):
+    """Fetch a LeetCode problem description and cache it."""
+    check_rate_limit(request, "leetcode", db)
+
+    normalized = validate_leetcode_slug(slug)
+    existing = db.query(ProblemDetail).filter(ProblemDetail.slug == normalized).first()
+
+    if existing and existing.description_html and not refresh:
+        return ProblemDetailResponse.model_validate(existing)
+
+    detail = fetch_leetcode_problem(normalized)
+    now = datetime.utcnow()
+
+    if existing:
+        existing.title = detail["title"]
+        existing.description_html = detail["description_html"]
+        existing.difficulty = detail["difficulty"]
+        existing.source = "leetcode"
+        existing.fetched_at = now
+        db.commit()
+        db.refresh(existing)
+        return ProblemDetailResponse.model_validate(existing)
+
+    record = ProblemDetail(
+        slug=normalized,
+        title=detail["title"],
+        description_html=detail["description_html"],
+        difficulty=detail["difficulty"],
+        source="leetcode",
+        fetched_at=now,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return ProblemDetailResponse.model_validate(record)
 
 
 # --- Problem Tracker ---
