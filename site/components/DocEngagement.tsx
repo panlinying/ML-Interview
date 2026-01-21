@@ -336,28 +336,37 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={handleGithubLogin}>Continue with GitHub</Button>
-              <Button variant="outline" onClick={handleGoogleLogin}>
-                Continue with Google
-              </Button>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                If you already have a JWT, paste it here to continue.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  value={tokenInput}
-                  onChange={event => setTokenInput(event.target.value)}
-                  placeholder="Paste access token"
-                  className="max-w-md"
-                />
-                <Button variant="outline" onClick={handleSaveToken}>
-                  Save token
-                </Button>
+            {process.env.NEXT_PUBLIC_API_URL ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleGithubLogin}>Continue with GitHub</Button>
+                  <Button variant="outline" onClick={handleGoogleLogin}>
+                    Continue with Google
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    If you already have a JWT, paste it here to continue.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Input
+                      value={tokenInput}
+                      onChange={event => setTokenInput(event.target.value)}
+                      placeholder="Paste access token"
+                      className="max-w-md"
+                    />
+                    <Button variant="outline" onClick={handleSaveToken}>
+                      Save token
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                <p>🎓 This is a static documentation site</p>
+                <p className="mt-2">Authentication features are available in development mode only.</p>
               </div>
-            </div>
+            )}
           </div>
         )}
 

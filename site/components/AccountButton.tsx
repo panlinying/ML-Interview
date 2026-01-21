@@ -202,12 +202,19 @@ export function AccountButton() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => startOAuth('github')}>Continue with GitHub</Button>
-              <Button variant="outline" onClick={() => startOAuth('google')}>
-                Continue with Google
-              </Button>
-            </div>
+            {process.env.NEXT_PUBLIC_API_URL ? (
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => startOAuth('github')}>Continue with GitHub</Button>
+                <Button variant="outline" onClick={() => startOAuth('google')}>
+                  Continue with Google
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                <p>Authentication is only available in development mode.</p>
+                <p className="mt-2">This is a static site - enjoy the content! 📚</p>
+              </div>
+            )}
           </div>
         )}
 
