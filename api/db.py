@@ -107,7 +107,13 @@ class RateLimit(Base):
 
 def get_engine():
     if not DATABASE_URL:
-        raise RuntimeError("POSTGRES_URL environment variable not set")
+        # Check what env vars are available
+        import os
+        available_vars = [k for k in os.environ.keys() if 'DATABASE' in k or 'POSTGRES' in k]
+        raise RuntimeError(
+            f"DATABASE_URL not set. Available database env vars: {available_vars}. "
+            f"Set DATABASE_URL or POSTGRES_URL environment variable."
+        )
     return create_engine(DATABASE_URL, pool_pre_ping=True)
 
 
