@@ -48,6 +48,11 @@ class Progress(Base):
     notes = Column(Text)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Spaced repetition tracking
+    review_count = Column(Integer, default=0)
+    last_reviewed_at = Column(DateTime, nullable=True)
+    next_review_at = Column(DateTime, nullable=True)
+
     user = relationship("User", back_populates="progress")
 
 
@@ -134,6 +139,30 @@ class RateLimit(Base):
     endpoint = Column(String(255), nullable=False)
     count = Column(Integer, default=1)
     window_start = Column(DateTime, default=datetime.utcnow)
+
+
+class ProblemProgress(Base):
+    """Track user progress on coding problems (LeetCode, etc.)."""
+    __tablename__ = "problem_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    problem_id = Column(String(50), nullable=False, index=True)  # e.g., "lc-1" for LeetCode #1
+    problem_name = Column(String(500), nullable=False)
+    difficulty = Column(String(20))  # easy, medium, hard
+    pattern = Column(String(100))  # e.g., "two-pointers", "sliding-window"
+    status = Column(String(20), default="not_started")  # not_started, attempted, solved, need_review
+    notes = Column(Text)
+    time_spent_minutes = Column(Integer, default=0)
+    attempts = Column(Integer, default=0)
+    last_attempted_at = Column(DateTime, nullable=True)
+    solved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "problem_id", name="uq_problem_progress_user"),
+    )
 
 
 # --- Database Session ---

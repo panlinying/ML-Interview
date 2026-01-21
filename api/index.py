@@ -17,7 +17,7 @@ from typing import Optional, List
 from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload
 
-from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, init_db
+from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, ProblemProgress, init_db
 from .auth import router as auth_router, get_current_user_required, get_current_user_optional, verify_admin_secret
 from .logging_config import setup_logging, get_logger
 
@@ -726,3 +726,392 @@ def record_activity(
         "longest_streak": user.longest_streak or 0,
         "streak_active_today": True
     }
+
+
+# --- Spaced Repetition ---
+
+# Spaced repetition intervals (in days): 1, 3, 7, 14, 30, 60
+REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60]
+
+
+def calculate_next_review(review_count: int) -> datetime:
+    """Calculate next review date based on review count."""
+    interval_index = min(review_count, len(REVIEW_INTERVALS) - 1)
+    days = REVIEW_INTERVALS[interval_index]
+    return datetime.utcnow() + timedelta(days=days)
+
+
+class ReviewItem(BaseModel):
+    content_slug: str
+    completed: bool
+    review_count: int
+    last_reviewed_at: Optional[datetime]
+    next_review_at: Optional[datetime]
+    days_overdue: int
+
+    class Config:
+        from_attributes = True
+
+
+@app.get("/api/reviews/due", response_model=List[ReviewItem])
+def get_due_reviews(
+    request: Request,
+    limit: int = 10,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Get content items due for review (spaced repetition)."""
+    check_rate_limit(request, "default", db)
+
+    now = datetime.utcnow()
+
+    # Get completed items that are due for review
+    due_items = db.query(Progress).filter(
+        Progress.user_id == user.id,
+        Progress.completed == True,
+        Progress.next_review_at <= now
+    ).order_by(Progress.next_review_at.asc()).limit(limit).all()
+
+    # Also get completed items that have never been reviewed
+    never_reviewed = db.query(Progress).filter(
+        Progress.user_id == user.id,
+        Progress.completed == True,
+        Progress.next_review_at == None
+    ).order_by(Progress.updated_at.asc()).limit(limit).all()
+
+    all_due = due_items + never_reviewed
+
+    return [
+        ReviewItem(
+            content_slug=p.content_slug,
+            completed=p.completed,
+            review_count=p.review_count or 0,
+            last_reviewed_at=p.last_reviewed_at,
+            next_review_at=p.next_review_at,
+            days_overdue=(now - p.next_review_at).days if p.next_review_at else 0
+        )
+        for p in all_due[:limit]
+    ]
+
+
+class ReviewComplete(BaseModel):
+    content_slug: str
+
+    @field_validator('content_slug')
+    @classmethod
+    def validate_content_slug(cls, v):
+        return validate_slug(v)
+
+
+@app.post("/api/reviews/complete")
+def complete_review(
+    data: ReviewComplete,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Mark a content item as reviewed and schedule next review."""
+    check_rate_limit(request, "default", db)
+
+    progress = db.query(Progress).filter(
+        Progress.user_id == user.id,
+        Progress.content_slug == data.content_slug
+    ).first()
+
+    if not progress:
+        raise HTTPException(status_code=404, detail="Progress not found")
+
+    # Update review tracking
+    progress.review_count = (progress.review_count or 0) + 1
+    progress.last_reviewed_at = datetime.utcnow()
+    progress.next_review_at = calculate_next_review(progress.review_count)
+
+    db.commit()
+
+    # Update streak
+    update_user_streak(user, db)
+
+    return {
+        "content_slug": data.content_slug,
+        "review_count": progress.review_count,
+        "next_review_at": progress.next_review_at.isoformat()
+    }
+
+
+# --- Problem Tracker ---
+
+class ProblemCreate(BaseModel):
+    problem_id: str
+    problem_name: str
+    difficulty: Optional[str] = None
+    pattern: Optional[str] = None
+    status: str = "not_started"
+    notes: Optional[str] = None
+    time_spent_minutes: int = 0
+
+    @field_validator('problem_id')
+    @classmethod
+    def validate_problem_id(cls, v):
+        if not v or len(v) > 50:
+            raise ValueError("Invalid problem ID")
+        if not re.match(r'^[\w-]+$', v):
+            raise ValueError("Problem ID must be alphanumeric with dashes")
+        return v
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v):
+        valid_statuses = ["not_started", "attempted", "solved", "need_review"]
+        if v not in valid_statuses:
+            raise ValueError(f"Status must be one of: {valid_statuses}")
+        return v
+
+    @field_validator('difficulty')
+    @classmethod
+    def validate_difficulty(cls, v):
+        if v and v not in ["easy", "medium", "hard"]:
+            raise ValueError("Difficulty must be easy, medium, or hard")
+        return v
+
+    @field_validator('notes')
+    @classmethod
+    def sanitize_notes(cls, v):
+        if v:
+            return sanitize_string(v, max_length=5000)
+        return v
+
+
+class ProblemUpdate(BaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    time_spent_minutes: Optional[int] = None
+    pattern: Optional[str] = None
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v):
+        if v:
+            valid_statuses = ["not_started", "attempted", "solved", "need_review"]
+            if v not in valid_statuses:
+                raise ValueError(f"Status must be one of: {valid_statuses}")
+        return v
+
+    @field_validator('notes')
+    @classmethod
+    def sanitize_notes(cls, v):
+        if v:
+            return sanitize_string(v, max_length=5000)
+        return v
+
+
+class ProblemResponse(BaseModel):
+    id: int
+    problem_id: str
+    problem_name: str
+    difficulty: Optional[str]
+    pattern: Optional[str]
+    status: str
+    notes: Optional[str]
+    time_spent_minutes: int
+    attempts: int
+    last_attempted_at: Optional[datetime]
+    solved_at: Optional[datetime]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProblemStatsResponse(BaseModel):
+    total: int
+    solved: int
+    attempted: int
+    need_review: int
+    by_difficulty: dict
+    by_pattern: dict
+    total_time_minutes: int
+
+
+@app.get("/api/problems", response_model=List[ProblemResponse])
+def get_problems(
+    request: Request,
+    status: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    pattern: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Get all tracked problems for the user."""
+    check_rate_limit(request, "default", db)
+
+    query = db.query(ProblemProgress).filter(ProblemProgress.user_id == user.id)
+
+    if status:
+        query = query.filter(ProblemProgress.status == status)
+    if difficulty:
+        query = query.filter(ProblemProgress.difficulty == difficulty)
+    if pattern:
+        query = query.filter(ProblemProgress.pattern == pattern)
+
+    problems = query.order_by(ProblemProgress.updated_at.desc()).offset(skip).limit(min(limit, 500)).all()
+
+    return [ProblemResponse.model_validate(p) for p in problems]
+
+
+@app.get("/api/problems/stats", response_model=ProblemStatsResponse)
+def get_problem_stats(
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Get problem tracking statistics."""
+    check_rate_limit(request, "default", db)
+
+    problems = db.query(ProblemProgress).filter(ProblemProgress.user_id == user.id).all()
+
+    stats = {
+        "total": len(problems),
+        "solved": sum(1 for p in problems if p.status == "solved"),
+        "attempted": sum(1 for p in problems if p.status == "attempted"),
+        "need_review": sum(1 for p in problems if p.status == "need_review"),
+        "by_difficulty": {},
+        "by_pattern": {},
+        "total_time_minutes": sum(p.time_spent_minutes or 0 for p in problems)
+    }
+
+    # Count by difficulty
+    for diff in ["easy", "medium", "hard"]:
+        stats["by_difficulty"][diff] = {
+            "total": sum(1 for p in problems if p.difficulty == diff),
+            "solved": sum(1 for p in problems if p.difficulty == diff and p.status == "solved")
+        }
+
+    # Count by pattern
+    patterns = set(p.pattern for p in problems if p.pattern)
+    for pattern in patterns:
+        stats["by_pattern"][pattern] = {
+            "total": sum(1 for p in problems if p.pattern == pattern),
+            "solved": sum(1 for p in problems if p.pattern == pattern and p.status == "solved")
+        }
+
+    return stats
+
+
+@app.post("/api/problems", response_model=ProblemResponse)
+def create_problem(
+    data: ProblemCreate,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Add a new problem to track."""
+    check_rate_limit(request, "default", db)
+
+    # Check if problem already exists
+    existing = db.query(ProblemProgress).filter(
+        ProblemProgress.user_id == user.id,
+        ProblemProgress.problem_id == data.problem_id
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Problem already tracked")
+
+    now = datetime.utcnow()
+    problem = ProblemProgress(
+        user_id=user.id,
+        problem_id=data.problem_id,
+        problem_name=data.problem_name,
+        difficulty=data.difficulty,
+        pattern=data.pattern,
+        status=data.status,
+        notes=data.notes,
+        time_spent_minutes=data.time_spent_minutes,
+        attempts=1 if data.status in ["attempted", "solved"] else 0,
+        last_attempted_at=now if data.status in ["attempted", "solved"] else None,
+        solved_at=now if data.status == "solved" else None
+    )
+    db.add(problem)
+    db.commit()
+    db.refresh(problem)
+
+    # Update streak
+    update_user_streak(user, db)
+
+    return ProblemResponse.model_validate(problem)
+
+
+@app.patch("/api/problems/{problem_id}", response_model=ProblemResponse)
+def update_problem(
+    problem_id: str,
+    data: ProblemUpdate,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Update a tracked problem."""
+    check_rate_limit(request, "default", db)
+
+    problem = db.query(ProblemProgress).filter(
+        ProblemProgress.user_id == user.id,
+        ProblemProgress.problem_id == problem_id
+    ).first()
+
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+
+    now = datetime.utcnow()
+
+    if data.status is not None:
+        old_status = problem.status
+        problem.status = data.status
+
+        # Track attempts and solve time
+        if data.status in ["attempted", "solved"] and old_status == "not_started":
+            problem.attempts = (problem.attempts or 0) + 1
+            problem.last_attempted_at = now
+
+        if data.status == "solved" and old_status != "solved":
+            problem.solved_at = now
+
+    if data.notes is not None:
+        problem.notes = data.notes
+
+    if data.time_spent_minutes is not None:
+        problem.time_spent_minutes = data.time_spent_minutes
+
+    if data.pattern is not None:
+        problem.pattern = data.pattern
+
+    db.commit()
+    db.refresh(problem)
+
+    # Update streak
+    update_user_streak(user, db)
+
+    return ProblemResponse.model_validate(problem)
+
+
+@app.delete("/api/problems/{problem_id}")
+def delete_problem(
+    problem_id: str,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Delete a tracked problem."""
+    check_rate_limit(request, "default", db)
+
+    problem = db.query(ProblemProgress).filter(
+        ProblemProgress.user_id == user.id,
+        ProblemProgress.problem_id == problem_id
+    ).first()
+
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+
+    db.delete(problem)
+    db.commit()
+
+    return {"status": "ok", "deleted": problem_id}

@@ -23,6 +23,15 @@ type DashboardData = {
   streak_active_today: boolean
 }
 
+type ReviewItem = {
+  content_slug: string
+  completed: boolean
+  review_count: number
+  last_reviewed_at: string | null
+  next_review_at: string | null
+  days_overdue: number
+}
+
 function formatRelativeTime(value: string | null) {
   if (!value) return ''
   const date = new Date(value)
@@ -51,8 +60,10 @@ function getSlugTitle(slug: string): string {
 export default function DashboardPage() {
   const { user, token, isAuthenticated, isLoading: authLoading, login } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
+  const [reviews, setReviews] = useState<ReviewItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reviewingSlug, setReviewingSlug] = useState<string | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -62,13 +73,36 @@ export default function DashboardPage() {
     }
 
     setLoading(true)
-    apiRequest<DashboardData>('/api/dashboard', { token })
-      .then(setData)
+    Promise.all([
+      apiRequest<DashboardData>('/api/dashboard', { token }),
+      apiRequest<ReviewItem[]>('/api/reviews/due', { token })
+    ])
+      .then(([dashboardData, reviewsData]) => {
+        setData(dashboardData)
+        setReviews(reviewsData)
+      })
       .catch(err => {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard')
       })
       .finally(() => setLoading(false))
   }, [isAuthenticated, token, authLoading])
+
+  const handleCompleteReview = async (contentSlug: string) => {
+    if (!token) return
+    setReviewingSlug(contentSlug)
+    try {
+      await apiRequest('/api/reviews/complete', {
+        method: 'POST',
+        token,
+        body: { content_slug: contentSlug }
+      })
+      setReviews(prev => prev.filter(r => r.content_slug !== contentSlug))
+    } catch {
+      // Silently fail
+    } finally {
+      setReviewingSlug(null)
+    }
+  }
 
   // Not authenticated
   if (!authLoading && !isAuthenticated) {
@@ -231,6 +265,59 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Review Reminders (Spaced Repetition) */}
+      {reviews.length > 0 && (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/5">
+          <div className="px-6 py-4 border-b border-amber-500/30">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-lg font-semibold text-foreground">Due for Review</h2>
+              <span className="text-sm text-muted-foreground">({reviews.length})</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Spaced repetition helps you remember what you learned
+            </p>
+          </div>
+          <div className="divide-y divide-amber-500/20">
+            {reviews.slice(0, 5).map((review) => (
+              <div
+                key={review.content_slug}
+                className="flex items-center justify-between px-6 py-3"
+              >
+                <Link
+                  href={docHref(review.content_slug)}
+                  className="flex-1 hover:text-primary transition-colors"
+                >
+                  <span className="text-sm text-foreground">
+                    {getSlugTitle(review.content_slug)}
+                  </span>
+                  {review.days_overdue > 0 && (
+                    <span className="text-xs text-amber-600 ml-2">
+                      {review.days_overdue}d overdue
+                    </span>
+                  )}
+                </Link>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Review #{(review.review_count || 0) + 1}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleCompleteReview(review.content_slug)}
+                    disabled={reviewingSlug === review.content_slug}
+                  >
+                    {reviewingSlug === review.content_slug ? 'Saving...' : 'Mark Reviewed'}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent Activity */}
       <div className="rounded-lg border border-border bg-card">
         <div className="px-6 py-4 border-b border-border">
@@ -277,7 +364,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href={docHref('00-Reference/Calendar Map')}
           className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
@@ -291,7 +378,24 @@ export default function DashboardPage() {
             <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
               View Calendar
             </h3>
-            <p className="text-sm text-muted-foreground">See your 10-week study plan</p>
+            <p className="text-sm text-muted-foreground">10-week study plan</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/problems"
+          className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
+        >
+          <div className="p-3 rounded-lg bg-green-500/10 text-green-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+              Problem Tracker
+            </h3>
+            <p className="text-sm text-muted-foreground">Track LeetCode progress</p>
           </div>
         </Link>
 
