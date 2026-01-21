@@ -26,6 +26,7 @@ GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 APP_URL = os.environ.get("APP_URL", "http://localhost:3000")
+API_URL = os.environ.get("API_URL", "http://localhost:8000")  # Backend URL for OAuth callbacks
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 
@@ -178,7 +179,7 @@ def github_login(redirect_to: Optional[str] = None, db=Depends(get_db)):
     github_url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
-        f"&redirect_uri={APP_URL}/api/auth/github/callback"
+        f"&redirect_uri={API_URL}/api/auth/github/callback"
         f"&scope=user:email"
         f"&state={state}"
     )
@@ -304,7 +305,7 @@ def google_login(redirect_to: Optional[str] = None, db=Depends(get_db)):
     google_url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
         f"?client_id={GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={APP_URL}/api/auth/google/callback"
+        f"&redirect_uri={API_URL}/api/auth/google/callback"
         "&response_type=code"
         "&scope=openid%20email%20profile"
         f"&state={state}"
@@ -335,7 +336,7 @@ async def google_callback(code: str, state: str, db=Depends(get_db)):
                 "client_id": GOOGLE_CLIENT_ID,
                 "client_secret": GOOGLE_CLIENT_SECRET,
                 "code": code,
-                "redirect_uri": f"{APP_URL}/api/auth/google/callback",
+                "redirect_uri": f"{API_URL}/api/auth/google/callback",
                 "grant_type": "authorization_code",
             },
             headers={"Accept": "application/json"},
