@@ -33,9 +33,9 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 APP_URL = os.environ.get("APP_URL", "http://localhost:3000")
 
 # API_URL: Backend API base URL (for OAuth callbacks)
-#   - Local: http://localhost:8000
+#   - Local: http://localhost:8000/api
 #   - Production: https://www.aceinterview.online/api
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+API_URL = os.environ.get("API_URL", "http://localhost:8000/api")
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
