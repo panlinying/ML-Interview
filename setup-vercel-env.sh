@@ -38,9 +38,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [ -n "$ENV_NAMES" ]; then
         for ENV_NAME in $ENV_NAMES; do
             echo "  Removing: $ENV_NAME"
-            npx vercel env rm "$ENV_NAME" production --yes 2>/dev/null || true
-            npx vercel env rm "$ENV_NAME" preview --yes 2>/dev/null || true
-            npx vercel env rm "$ENV_NAME" development --yes 2>/dev/null || true
+            echo "y" | npx vercel env rm "$ENV_NAME" production 2>/dev/null || true
+            echo "y" | npx vercel env rm "$ENV_NAME" preview 2>/dev/null || true
+            echo "y" | npx vercel env rm "$ENV_NAME" development 2>/dev/null || true
         done
         echo "✅ All variables removed"
     else
@@ -55,11 +55,11 @@ echo "➕ Adding new environment variables..."
 
 # Add NEXT_PUBLIC_API_URL
 echo "  Adding: NEXT_PUBLIC_API_URL"
-echo "https://www.aceinterview.online/api" | npx vercel env add NEXT_PUBLIC_API_URL production --yes
+echo "https://www.aceinterview.online/api" | npx vercel env add NEXT_PUBLIC_API_URL production
 
 # Add NEXT_STATIC_EXPORT
 echo "  Adding: NEXT_STATIC_EXPORT"
-echo "true" | npx vercel env add NEXT_STATIC_EXPORT production --yes
+echo "true" | npx vercel env add NEXT_STATIC_EXPORT production
 
 echo ""
 echo "✅ Environment variables configured!"
