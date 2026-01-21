@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,131 +11,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { apiRequest } from '@/lib/api'
-import { basePath } from '@/lib/basePath'
-import {
-  AUTH_TOKEN_EVENT,
-  clearStoredToken,
-  getStoredToken,
-  setStoredToken,
-} from '@/lib/auth'
-
-type UserResponse = {
-  authenticated: boolean
-  user_id?: number
-  email?: string
-  name?: string
-  image?: string | null
-}
-
-function getInitials(name?: string, email?: string) {
-  const source = name?.trim() || email?.trim() || ''
-  if (!source) {
-    return '?'
-  }
-  const parts = source.split(/\s+/).filter(Boolean)
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase()
-  }
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-}
+import { useAuth, getInitials } from '@/lib/useAuth'
 
 export function AccountButton() {
   const pathname = usePathname()
-  const [authToken, setAuthTokenState] = useState<string | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [authError, setAuthError] = useState<string | null>(null)
-  const [user, setUser] = useState<UserResponse | null>(null)
-
-  useEffect(() => {
-    const stored = getStoredToken()
-    if (stored) {
-      setAuthTokenState(stored)
-    } else {
-      setAuthLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    function handleTokenChange(event: Event) {
-      const detail = (event as CustomEvent<{ token: string | null }>).detail
-      setAuthTokenState(detail?.token ?? null)
-    }
-
-    window.addEventListener(AUTH_TOKEN_EVENT, handleTokenChange)
-    return () => window.removeEventListener(AUTH_TOKEN_EVENT, handleTokenChange)
-  }, [])
-
-  useEffect(() => {
-    let active = true
-
-    async function loadUser() {
-      setAuthError(null)
-      if (!authToken) {
-        setUser(null)
-        setAuthLoading(false)
-        return
-      }
-
-      setAuthLoading(true)
-      try {
-        const me = await apiRequest<UserResponse>('/api/auth/me', {
-          token: authToken,
-        })
-        if (!active) return
-
-        if (me.authenticated) {
-          setUser(me)
-        } else {
-          clearStoredToken()
-          setAuthTokenState(null)
-          setUser(null)
-        }
-      } catch (err) {
-        if (!active) return
-        const message = err instanceof Error ? err.message : 'Unable to load account'
-        setAuthError(message)
-        setUser(null)
-      } finally {
-        if (active) {
-          setAuthLoading(false)
-        }
-      }
-    }
-
-    loadUser()
-
-    return () => {
-      active = false
-    }
-  }, [authToken])
-
+  const {
+    user,
+    isLoading: authLoading,
+    isAuthenticated,
+    error: authError,
+    login,
+    logout,
+  } = useAuth()
 
   const handleLogout = () => {
-    clearStoredToken()
-    setAuthTokenState(null)
-    setUser(null)
-    setAuthError(null)
+    logout()
   }
 
   const startOAuth = async (provider: 'github' | 'google') => {
-    setAuthError(null)
-    try {
-      const callbackUrl = new URL(`${basePath}/auth/callback`, window.location.origin)
-      if (pathname) {
-        callbackUrl.searchParams.set('returnTo', pathname)
-      }
-      const login = await apiRequest<{ url: string }>(
-        `/api/auth/${provider}?redirect_to=${encodeURIComponent(callbackUrl.toString())}`
-      )
-      window.location.href = login.url
-    } catch (err) {
-      const message = err instanceof Error ? err.message : `Unable to start ${provider} login`
-      setAuthError(message)
-    }
+    await login(provider, pathname || undefined)
   }
 
-  const isAuthenticated = Boolean(user?.authenticated)
   const initials = getInitials(user?.name, user?.email)
   const avatarUrl = user?.image?.trim()
 
@@ -145,10 +41,12 @@ export function AccountButton() {
         <Button variant="ghost" size="icon" aria-label="Account">
           {isAuthenticated ? (
             avatarUrl ? (
-              <img
+              <Image
                 src={avatarUrl}
                 alt={user?.name || user?.email || 'User avatar'}
                 className="h-8 w-8 rounded-full object-cover"
+                width={32}
+                height={32}
                 referrerPolicy="no-referrer"
               />
             ) : (
@@ -180,7 +78,9 @@ export function AccountButton() {
         <DialogHeader>
           <DialogTitle>Account</DialogTitle>
           <DialogDescription>
-            Sign in to save progress and join discussions.
+            {isAuthenticated
+              ? 'Manage your account and session.'
+              : 'Sign in to save progress and join discussions.'}
           </DialogDescription>
         </DialogHeader>
 

@@ -2,7 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 
-const contentRoot = path.resolve(process.cwd(), '..', 'content')
+const preferredRoot = path.resolve(process.cwd(), '..', 'content')
+const fallbackRoot = path.resolve(process.cwd(), 'content')
+const contentRoot = fs.existsSync(preferredRoot) ? preferredRoot : fallbackRoot
 const contentDirs = ['00-Reference', '10-Weeks', '20-Daily', '30-ML-Fundamentals', '40-ML-System-Design']
 
 export interface MarkdownFile {

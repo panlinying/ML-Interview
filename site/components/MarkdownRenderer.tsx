@@ -10,13 +10,14 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   content: string
+  className?: string
 }
 
-export function MarkdownRenderer({ content }: Props) {
+export function MarkdownRenderer({ content, className }: Props) {
   const docsPrefix = `${basePath}/docs/`
 
   return (
-    <div className="prose prose-neutral dark:prose-invert max-w-none">
+    <div className={cn('prose prose-neutral dark:prose-invert max-w-none', className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight, rehypeSlug]}

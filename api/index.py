@@ -6,16 +6,69 @@ Deployed as Vercel serverless functions.
 import os
 import re
 import html
+import time
+import uuid
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
+from sqlalchemy import func, text
+from sqlalchemy.orm import joinedload
 
-from .db import get_session, Progress, Comment, PageView, User, RateLimit, init_db
+from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, init_db
 from .auth import router as auth_router, get_current_user_required, get_current_user_optional, verify_admin_secret
+from .logging_config import setup_logging, get_logger
+
+# Initialize logging
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+LOG_JSON = os.environ.get("LOG_JSON", "true").lower() == "true"
+setup_logging(level=LOG_LEVEL, json_format=LOG_JSON)
+
+logger = get_logger(__name__)
 
 app = FastAPI(title="ML Interview API")
+
+
+# --- Request Logging Middleware ---
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """Log all incoming requests with timing information."""
+
+    async def dispatch(self, request: Request, call_next):
+        request_id = str(uuid.uuid4())[:8]
+        request.state.request_id = request_id
+
+        start_time = time.perf_counter()
+
+        response = await call_next(request)
+
+        duration_ms = (time.perf_counter() - start_time) * 1000
+
+        # Log request details
+        logger.info(
+            f"{request.method} {request.url.path} - {response.status_code}",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": str(request.url.path),
+                "status_code": response.status_code,
+                "duration_ms": round(duration_ms, 2),
+                "client_ip": self._get_client_ip(request),
+            }
+        )
+
+        return response
+
+    def _get_client_ip(self, request: Request) -> str:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.client.host if request.client else "unknown"
+
+
+app.add_middleware(RequestLoggingMiddleware)
 
 # Include auth routes
 app.include_router(auth_router)
@@ -53,20 +106,23 @@ def get_client_ip(request: Request) -> str:
 
 def check_rate_limit(
     request: Request,
-    endpoint: str = "default",
-    db=None
-) -> bool:
-    """Check and update rate limit for a client."""
-    if db is None:
-        return True  # Skip if no db
+    endpoint: str,
+    db
+) -> None:
+    """
+    Check and update rate limit for a client.
 
+    Raises HTTPException with 429 status if rate limit exceeded.
+    Database session is required - rate limiting cannot be bypassed.
+    """
     client_ip = get_client_ip(request)
     limit, window_seconds = RATE_LIMITS.get(endpoint, RATE_LIMITS["default"])
 
     now = datetime.utcnow()
     window_start = now - timedelta(seconds=window_seconds)
 
-    # Clean old entries
+    # Clean old entries (only occasionally to avoid doing this on every request)
+    # TODO: Move to a background task for better performance
     db.query(RateLimit).filter(RateLimit.window_start < window_start).delete()
 
     # Check current count
@@ -93,17 +149,6 @@ def check_rate_limit(
         db.add(rate_entry)
 
     db.commit()
-    return True
-
-
-# --- Database Dependency ---
-
-def get_db():
-    db = get_session()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # --- Input Sanitization ---
@@ -165,6 +210,7 @@ class ProgressResponse(BaseModel):
 class CommentCreate(BaseModel):
     content_slug: str
     body: str
+    parent_id: Optional[int] = None
 
     @field_validator('content_slug')
     @classmethod
@@ -178,6 +224,13 @@ class CommentCreate(BaseModel):
             raise ValueError("Comment body cannot be empty")
         return sanitize_string(v, max_length=10000)
 
+    @field_validator('parent_id')
+    @classmethod
+    def validate_parent_id(cls, v):
+        if v is not None and v < 1:
+            raise ValueError("Invalid parent id")
+        return v
+
 
 class CommentResponse(BaseModel):
     id: int
@@ -186,9 +239,29 @@ class CommentResponse(BaseModel):
     content_slug: str
     body: str
     created_at: datetime
+    parent_id: Optional[int] = None
+    score: int = 0
+    user_vote: int = 0
 
     class Config:
         from_attributes = True
+
+
+class CommentVoteCreate(BaseModel):
+    vote: int
+
+    @field_validator('vote')
+    @classmethod
+    def validate_vote(cls, v):
+        if v not in (-1, 0, 1):
+            raise ValueError("Vote must be -1, 0, or 1")
+        return v
+
+
+class CommentVoteResponse(BaseModel):
+    comment_id: int
+    score: int
+    user_vote: int
 
 
 class PageViewCreate(BaseModel):
@@ -228,35 +301,31 @@ def health_check_detailed():
     # Test database connection
     try:
         db = get_session()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         health["database_connection"] = "ok"
-    except Exception as e:
-        health["database_connection"] = f"error: {str(e)}"
+    except Exception:
+        # Don't leak error details to clients
+        health["database_connection"] = "error"
         health["status"] = "degraded"
     
     return health
 
 
-@app.get("/api/init-db")
-def initialize_database(admin_secret: str):
-    """Initialize database tables (protected by admin secret)."""
-    # Verify admin secret
-    if not ADMIN_SECRET:
-        raise HTTPException(status_code=500, detail="ADMIN_SECRET not configured")
-    
-    if admin_secret != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid admin secret")
-    
+@app.post("/api/admin/init-db")
+def initialize_database(_: bool = Depends(verify_admin_secret)):
+    """
+    Initialize database tables (admin only).
+
+    Requires X-Admin-Secret header for authentication.
+    """
     try:
         init_db()
+        logger.info("Database initialized successfully")
         return {"status": "ok", "message": "Database initialized"}
     except Exception as e:
-        # Log the error for debugging
-        import traceback
-        error_detail = f"{str(e)}\n{traceback.format_exc()}"
-        print(f"Database initialization error: {error_detail}")
-        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
+        logger.exception("Database initialization failed")
+        raise HTTPException(status_code=500, detail="Database initialization failed")
 
 
 # --- Progress Routes (Authenticated) ---
@@ -264,12 +333,18 @@ def initialize_database(admin_secret: str):
 @app.get("/api/progress", response_model=List[ProgressResponse])
 def get_progress(
     request: Request,
+    skip: int = 0,
+    limit: int = 100,
     user: User = Depends(get_current_user_required),
     db=Depends(get_db)
 ):
-    """Get all progress for the authenticated user."""
+    """Get progress for the authenticated user with pagination."""
     check_rate_limit(request, "default", db)
-    progress = db.query(Progress).filter(Progress.user_id == user.id).all()
+    # Cap limit to prevent excessive data retrieval
+    limit = min(limit, 500)
+    progress = db.query(Progress).filter(
+        Progress.user_id == user.id
+    ).offset(skip).limit(limit).all()
     return progress
 
 
@@ -333,28 +408,67 @@ def update_progress(
 def get_comments(
     content_slug: str,
     request: Request,
+    skip: int = 0,
+    limit: int = 50,
+    user: Optional[User] = Depends(get_current_user_optional),
     db=Depends(get_db)
 ):
-    """Get comments for a content item (public)."""
+    """Get comments for a content item (public) with pagination."""
     check_rate_limit(request, "default", db)
     content_slug = validate_slug(content_slug)
 
-    comments = db.query(Comment).filter(
-        Comment.content_slug == content_slug
-    ).order_by(Comment.created_at.desc()).all()
+    # Cap limit to prevent excessive data retrieval
+    limit = min(limit, 100)
 
-    result = []
-    for c in comments:
-        user = db.query(User).filter(User.id == c.user_id).first()
-        result.append(CommentResponse(
+    # Use joinedload to fetch users in a single JOIN query (fixes N+1 problem)
+    comments = db.query(Comment).options(
+        joinedload(Comment.user)
+    ).filter(
+        Comment.content_slug == content_slug
+    ).order_by(Comment.created_at.desc()).offset(skip).limit(limit).all()
+
+    if not comments:
+        return []
+
+    comment_ids = [comment.id for comment in comments]
+
+    # Batch fetch vote scores in a single query
+    score_by_comment = {comment_id: 0 for comment_id in comment_ids}
+    score_rows = db.query(
+        CommentVote.comment_id,
+        func.coalesce(func.sum(CommentVote.vote), 0)
+    ).filter(
+        CommentVote.comment_id.in_(comment_ids)
+    ).group_by(CommentVote.comment_id).all()
+    score_by_comment.update({row[0]: int(row[1] or 0) for row in score_rows})
+
+    # Batch fetch user votes in a single query
+    user_votes = {}
+    if user:
+        vote_rows = db.query(
+            CommentVote.comment_id,
+            CommentVote.vote
+        ).filter(
+            CommentVote.comment_id.in_(comment_ids),
+            CommentVote.user_id == user.id
+        ).all()
+        user_votes = {row[0]: row[1] for row in vote_rows}
+
+    # Build response - user is already loaded via joinedload
+    return [
+        CommentResponse(
             id=c.id,
             user_id=c.user_id,
-            user_name=user.name if user else None,
+            user_name=c.user.name if c.user else None,
             content_slug=c.content_slug,
             body=c.body,
-            created_at=c.created_at
-        ))
-    return result
+            created_at=c.created_at,
+            parent_id=c.parent_id,
+            score=score_by_comment.get(c.id, 0),
+            user_vote=user_votes.get(c.id, 0)
+        )
+        for c in comments
+    ]
 
 
 @app.post("/api/comments", response_model=CommentResponse)
@@ -367,9 +481,20 @@ def create_comment(
     """Create a new comment (authenticated)."""
     check_rate_limit(request, "comments", db)
 
+    parent_id = data.parent_id
+    if parent_id:
+        parent_comment = db.query(Comment).filter(Comment.id == parent_id).first()
+        if not parent_comment:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+        if parent_comment.content_slug != data.content_slug:
+            raise HTTPException(status_code=400, detail="Parent comment does not match content")
+        if parent_comment.parent_id:
+            parent_id = parent_comment.parent_id
+
     comment = Comment(
         user_id=user.id,
         content_slug=data.content_slug,
+        parent_id=parent_id,
         body=data.body
     )
     db.add(comment)
@@ -382,7 +507,56 @@ def create_comment(
         user_name=user.name,
         content_slug=comment.content_slug,
         body=comment.body,
-        created_at=comment.created_at
+        created_at=comment.created_at,
+        parent_id=comment.parent_id,
+        score=0,
+        user_vote=0
+    )
+
+
+@app.post("/api/comments/{comment_id}/vote", response_model=CommentVoteResponse)
+def vote_comment(
+    comment_id: int,
+    data: CommentVoteCreate,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db)
+):
+    """Vote on a comment (authenticated)."""
+    check_rate_limit(request, "default", db)
+
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    existing_vote = db.query(CommentVote).filter(
+        CommentVote.comment_id == comment_id,
+        CommentVote.user_id == user.id
+    ).first()
+
+    if data.vote == 0:
+        if existing_vote:
+            db.delete(existing_vote)
+    else:
+        if existing_vote:
+            existing_vote.vote = data.vote
+        else:
+            db.add(CommentVote(
+                user_id=user.id,
+                comment_id=comment_id,
+                vote=data.vote
+            ))
+
+    db.commit()
+
+    score = db.query(func.coalesce(func.sum(CommentVote.vote), 0)).filter(
+        CommentVote.comment_id == comment_id
+    ).scalar()
+
+    return CommentVoteResponse(
+        comment_id=comment_id,
+        score=int(score or 0),
+        user_vote=data.vote if data.vote in (-1, 1) else 0
     )
 
 

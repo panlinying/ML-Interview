@@ -15,7 +15,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import jwt
 
-from .db import get_session, User, Session
+from .db import get_db, User, Session
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 security = HTTPBearer(auto_error=False)
@@ -60,14 +60,6 @@ class UserResponse(BaseModel):
     email: Optional[str] = None
     name: Optional[str] = None
     image: Optional[str] = None
-
-
-def get_db():
-    db = get_session()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def create_jwt_token(user_id: int, email: str) -> str:
@@ -154,12 +146,30 @@ def hash_token(token: str) -> str:
 
 
 def normalize_redirect(redirect_to: Optional[str]) -> Optional[str]:
-    """Allow only redirects back to the configured app URL."""
+    """
+    Validate redirect URL against allowed origins.
+
+    Uses strict URL parsing to prevent open redirect attacks.
+    Only allows redirects to the exact configured APP_URL domain.
+    """
     if not redirect_to:
         return None
-    if not redirect_to.startswith(APP_URL):
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(redirect_to)
+        app_parsed = urlparse(APP_URL)
+
+        # Must have a valid scheme
+        if parsed.scheme not in ('http', 'https'):
+            return None
+
+        # Strict domain match - prevents evilsite.com.example.com attacks
+        if parsed.netloc != app_parsed.netloc:
+            return None
+
+        return redirect_to
+    except Exception:
         return None
-    return redirect_to
 
 
 @router.get("/github")

@@ -1,13 +1,11 @@
 # ML Interview Preparation
 
-[![Vercel](https://img.shields.io/badge/View%20Online-Vercel-black)](https://ml-interview.vercel.app/)
 [![GitHub Pages](https://img.shields.io/badge/View%20Online-GitHub%20Pages-blue)](https://www.aceinterview.online/)
 
 A comprehensive 10-week ML engineer interview preparation system designed as an Obsidian vault with a modern web interface.
 
 **View online:** 
-- https://ml-interview.vercel.app/ (Vercel)
-- https://www.aceinterview.online/ (GitHub Pages)
+- https://www.aceinterview.online
 
 ## Overview
 
@@ -41,7 +39,7 @@ ML-Interview/
 
 ### Using the Web Interface
 
-Visit [ml-interview.vercel.app](https://ml-interview.vercel.app/) or [aceinterview.online](https://www.aceinterview.online/) to:
+Visit [aceinterview.online](https://www.aceinterview.online/) to:
 
 1. Browse the curriculum with a modern, searchable interface
 2. Navigate through daily notes and weekly plans

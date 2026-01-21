@@ -4,6 +4,7 @@ import './globals.css'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { AuthProvider } from '@/lib/useAuth'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,15 +26,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <div className="flex min-h-screen bg-background">
-            <Sidebar />
-            <div className="flex-1 flex flex-col lg:ml-72">
-              <Header />
-              <main className="flex-1 p-6 lg:p-8">
-                {children}
-              </main>
+          <AuthProvider>
+            <div className="flex min-h-screen bg-background">
+              <Sidebar />
+              <div className="flex-1 flex flex-col lg:ml-72">
+                <Header />
+                <main className="flex-1 p-6 lg:p-8">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

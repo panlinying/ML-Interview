@@ -3,7 +3,7 @@ Database models and connection for Vercel Postgres.
 """
 
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
+from sqlalchemy import create_engine, Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -65,10 +65,25 @@ class Comment(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content_slug = Column(String(255), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True, index=True)
     body = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="comments")
+
+
+class CommentVote(Base):
+    __tablename__ = "comment_votes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    comment_id = Column(Integer, ForeignKey("comments.id"), nullable=False, index=True)
+    vote = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "comment_id", name="uq_comment_vote_user"),
+    )
 
 
 class PageView(Base):
@@ -105,22 +120,60 @@ class RateLimit(Base):
 
 # --- Database Session ---
 
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
 def get_engine():
+    """
+    Create a singleton database engine with connection pooling.
+
+    Uses lru_cache to ensure only one engine is created per process,
+    preventing connection pool exhaustion and memory leaks.
+    """
     if not DATABASE_URL:
-        # Check what env vars are available
-        import os
         available_vars = [k for k in os.environ.keys() if 'DATABASE' in k or 'POSTGRES' in k]
         raise RuntimeError(
             f"DATABASE_URL not set. Available database env vars: {available_vars}. "
             f"Set DATABASE_URL or POSTGRES_URL environment variable."
         )
-    return create_engine(DATABASE_URL, pool_pre_ping=True)
+    return create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=3600,
+    )
+
+
+# Module-level session factory (singleton pattern)
+_SessionLocal = None
+
+
+def get_session_factory():
+    """Get or create the session factory singleton."""
+    global _SessionLocal
+    if _SessionLocal is None:
+        _SessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=get_engine()
+        )
+    return _SessionLocal
 
 
 def get_session():
-    engine = get_engine()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    return SessionLocal()
+    """Create a new database session."""
+    return get_session_factory()()
+
+
+def get_db():
+    """FastAPI dependency for database sessions."""
+    db = get_session()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def init_db():
