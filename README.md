@@ -138,138 +138,112 @@ uv run python run.py content/ml_interview_detailed_guide.md --out content
 
 ## Development
 
-**📖 For detailed development instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)**
+### Local Development
 
-### Quick Start
-
-**Option 1: One-command startup (easiest)**
 ```bash
-# Setup environment (first time only)
+# 1. Setup environment
 cp .env.example .env.local
-# Edit .env.local with your values
+# Edit .env.local with your database URL and secrets
 
-# Start both frontend and backend
+# 2. Start everything with one command
 ./start-dev.sh
 ```
 
-**Option 2: Manual startup**
+This starts:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-**Terminal 1 - Frontend (Next.js):**
+### Manual Setup (if needed)
+
+**Frontend:**
 ```bash
-cd site
-npm install
-npm run dev
-```
-→ http://localhost:3000
-
-**Terminal 2 - Backend (FastAPI):**
-```bash
-# From project root
-uv sync
-uv run uvicorn api.index:app --reload --port 8000
-```
-→ http://localhost:8000  
-→ API docs: http://localhost:8000/docs
-
-### Build for Production
-
-```bash
-cd site
-
-# Build static site
-npm run build
-
-# Serve production build
-npm start
+cd site && npm install && npm run dev
 ```
 
-The site will be available at `http://localhost:3000`.
+**Backend:**
+```bash
+uv sync && uv run uvicorn api.index:app --reload --port 8000
+```
 
 ## Deployment
 
-### Vercel (Recommended)
+### Quick Deploy (30 minutes)
 
-The project is configured for Vercel deployment with `vercel.json`:
-
+**1. Deploy Backend to Railway**
 ```bash
-# Deploy to production
-npx vercel deploy --prod
+# Go to https://railway.app
+# New Project → Deploy from GitHub → Select your repo
+# Add PostgreSQL: Click "+ New" → Database → PostgreSQL
+# Add environment variables (see below)
+# Settings → Networking → Generate Domain
 ```
 
-Configuration:
-- Root directory: Project root (monorepo setup)
-- Build command: Runs from `site/` directory
-- Output directory: `site/out`
-- Environment variable: `NEXT_PUBLIC_BASE_PATH=` (empty for root domain)
-
-### GitHub Pages
-
-For GitHub Pages deployment with a base path:
-
+**2. Deploy Frontend to Vercel**
 ```bash
-# Set environment variable
-NEXT_PUBLIC_BASE_PATH=/ML-Interview npm run build
+# Go to https://vercel.com
+# Add New Project → Import your GitHub repo
+# Add environment variables:
+#   NEXT_PUBLIC_API_URL=https://www.aceinterview.online/api
+#   NEXT_STATIC_EXPORT=true
+# Settings → Domains → Add www.aceinterview.online
 ```
 
-The GitHub Actions workflow automatically sets this for the `/ML-Interview` base path.
+**3. Update vercel.json**
+```json
+{
+  "rewrites": [{
+    "source": "/api/:path*",
+    "destination": "https://YOUR-RAILWAY-URL.up.railway.app/api/:path*"
+  }]
+}
+```
+
+**4. Initialize Database**
+```
+Visit: https://YOUR-RAILWAY-URL.up.railway.app/api/init-db?admin_secret=YOUR_SECRET
+```
+
+**5. Update OAuth Callbacks**
+- GitHub: Add `https://www.aceinterview.online/api/auth/github/callback`
+- Google: Add `https://www.aceinterview.online/api/auth/google/callback`
 
 ### Environment Variables
 
-The backend API requires the following environment variables. Copy `.env.example` to `.env.local` for local development:
-
+**Railway (Backend):**
 ```bash
-cp .env.example .env.local
+DATABASE_URL=<auto-set by Railway PostgreSQL>
+JWT_SECRET=<generate with: openssl rand -hex 32>
+ADMIN_SECRET=<generate with: openssl rand -hex 32>
+GITHUB_CLIENT_ID=<from GitHub OAuth app>
+GITHUB_CLIENT_SECRET=<from GitHub OAuth app>
+GOOGLE_CLIENT_ID=<from Google Cloud Console>
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+APP_URL=https://www.aceinterview.online
+API_URL=https://www.aceinterview.online/api
+ALLOWED_ORIGINS=https://www.aceinterview.online
 ```
 
-#### Required Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | Neon/Postgres connection string | `postgresql://user:pass@host/db?sslmode=require` |
-| `JWT_SECRET` | Secret for JWT tokens (min 32 chars) | Generate with `openssl rand -hex 32` |
-| `ADMIN_SECRET` | Secret for admin endpoints | Generate with `openssl rand -hex 32` |
-| `APP_URL` | Your app's public URL | `https://www.aceinterview.online` |
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `https://www.aceinterview.online` |
-
-#### OAuth Variables (Optional)
-
-| Variable | Description | Where to get |
-|----------|-------------|--------------|
-| `GITHUB_CLIENT_ID` | GitHub OAuth App ID | [GitHub Developer Settings](https://github.com/settings/developers) |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App Secret | Same as above |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Same as above |
-
-#### Adding Variables to Vercel
-
-**Option 1: CLI**
+**Vercel (Frontend):**
 ```bash
-# Add each variable
-echo "your-value" | npx vercel env add VARIABLE_NAME production
-
-# Example
-echo "https://www.aceinterview.online" | npx vercel env add APP_URL production
+NEXT_PUBLIC_API_URL=https://www.aceinterview.online/api
+NEXT_STATIC_EXPORT=true
 ```
 
-**Option 2: Dashboard**
-1. Go to [Vercel Project Settings](https://vercel.com) → Your Project → Settings
-2. Navigate to "Environment Variables"
-3. Add each variable for Production/Preview/Development
-
-**Option 3: Pull existing variables**
+**Local (.env.local):**
 ```bash
-# Pull all env vars to .env.local
-npx vercel env pull
+DATABASE_URL=<Railway public PostgreSQL URL>
+JWT_SECRET=<same as Railway>
+ADMIN_SECRET=<same as Railway>
+GITHUB_CLIENT_ID=<same as Railway>
+GITHUB_CLIENT_SECRET=<same as Railway>
+GOOGLE_CLIENT_ID=<same as Railway>
+GOOGLE_CLIENT_SECRET=<same as Railway>
+APP_URL=http://localhost:3000
+API_URL=http://localhost:8000/api
+NEXT_PUBLIC_API_URL=http://localhost:8000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
 ```
-
-#### OAuth Callback URLs
-
-When setting up OAuth apps, use these callback URLs:
-
-- **GitHub:** `https://your-domain.com/api/auth/github/callback`
-- **Google:** `https://your-domain.com/api/auth/google/callback`
-
-For local development, create separate OAuth apps with `http://localhost:3000` callbacks.
 
 ## Features
 
