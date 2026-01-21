@@ -48,6 +48,7 @@ class UserResponse(BaseModel):
     user_id: Optional[int] = None
     email: Optional[str] = None
     name: Optional[str] = None
+    image: Optional[str] = None
 
 
 def get_db():
@@ -396,6 +397,7 @@ def get_me(user: Optional[User] = Depends(get_current_user_optional)):
         user_id=user.id,
         email=user.email,
         name=user.name,
+        image=user.image,
     )
 
 

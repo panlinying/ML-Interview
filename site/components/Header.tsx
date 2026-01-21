@@ -3,6 +3,7 @@
 import { useTheme } from './ThemeProvider'
 import { SearchCommand } from './SearchCommand'
 import { Button } from '@/components/ui/button'
+import { AccountButton } from '@/components/AccountButton'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
@@ -46,6 +47,8 @@ export function Header() {
               </svg>
             )}
           </Button>
+
+          <AccountButton />
         </div>
       </div>
     </header>

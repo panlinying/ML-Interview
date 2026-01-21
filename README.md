@@ -138,19 +138,45 @@ uv run python run.py content/ml_interview_detailed_guide.md --out content
 
 ## Development
 
-### Running Locally
+**📖 For detailed development instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)**
+
+### Quick Start
+
+**Option 1: One-command startup (easiest)**
+```bash
+# Setup environment (first time only)
+cp .env.example .env.local
+# Edit .env.local with your values
+
+# Start both frontend and backend
+./start-dev.sh
+```
+
+**Option 2: Manual startup**
+
+**Terminal 1 - Frontend (Next.js):**
+```bash
+cd site
+npm install
+npm run dev
+```
+→ http://localhost:3000
+
+**Terminal 2 - Backend (FastAPI):**
+```bash
+# From project root
+uv sync
+uv run uvicorn api.index:app --reload --port 8000
+```
+→ http://localhost:8000  
+→ API docs: http://localhost:8000/docs
+
+### Build for Production
 
 ```bash
-# Navigate to the site directory
 cd site
 
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
+# Build static site
 npm run build
 
 # Serve production build

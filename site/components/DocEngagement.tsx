@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { apiRequest, encodeSlugPath } from '@/lib/api'
-import { clearStoredToken, getStoredToken, setStoredToken } from '@/lib/auth'
+import { AUTH_TOKEN_EVENT, clearStoredToken, getStoredToken, setStoredToken } from '@/lib/auth'
 import { basePath } from '@/lib/basePath'
 
 type UserResponse = {
@@ -66,6 +66,16 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
     } else {
       setAuthLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    function handleTokenChange(event: Event) {
+      const detail = (event as CustomEvent<{ token: string | null }>).detail
+      setAuthTokenState(detail?.token ?? null)
+    }
+
+    window.addEventListener(AUTH_TOKEN_EVENT, handleTokenChange)
+    return () => window.removeEventListener(AUTH_TOKEN_EVENT, handleTokenChange)
   }, [])
 
   useEffect(() => {
