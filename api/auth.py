@@ -25,8 +25,18 @@ GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+
+# URL Configuration
+# APP_URL: Frontend URL (where to redirect users after OAuth)
+#   - Local: http://localhost:3000
+#   - Production: https://www.aceinterview.online
 APP_URL = os.environ.get("APP_URL", "http://localhost:3000")
-API_URL = os.environ.get("API_URL", "http://localhost:8000")  # Backend URL for OAuth callbacks
+
+# API_URL: Backend API base URL (for OAuth callbacks)
+#   - Local: http://localhost:8000
+#   - Production: https://www.aceinterview.online/api
+API_URL = os.environ.get("API_URL", "http://localhost:8000")
+
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
 
@@ -265,18 +275,14 @@ async def github_callback(code: str, state: str, db=Depends(get_db)):
     # Create JWT token
     jwt_token = create_jwt_token(user.id, user.email)
 
+    # Get redirect URL from session or fallback to APP_URL
     redirect_to = session.data.get("redirect_to") if session.data else None
-    if redirect_to:
-        separator = "&" if "?" in redirect_to else "?"
-        return RedirectResponse(f"{redirect_to}{separator}token={jwt_token}")
-
-    return TokenResponse(
-        access_token=jwt_token,
-        expires_in=JWT_EXPIRATION_HOURS * 3600,
-        user_id=user.id,
-        user_name=user.name,
-        user_email=user.email,
-    )
+    if not redirect_to:
+        redirect_to = APP_URL
+    
+    # Redirect to frontend with JWT token
+    separator = "&" if "?" in redirect_to else "?"
+    return RedirectResponse(f"{redirect_to}{separator}token={jwt_token}")
 
 
 @router.get("/google")
@@ -373,18 +379,14 @@ async def google_callback(code: str, state: str, db=Depends(get_db)):
 
     jwt_token = create_jwt_token(user.id, user.email)
 
+    # Get redirect URL from session or fallback to APP_URL
     redirect_to = session.data.get("redirect_to") if session.data else None
-    if redirect_to:
-        separator = "&" if "?" in redirect_to else "?"
-        return RedirectResponse(f"{redirect_to}{separator}token={jwt_token}")
-
-    return TokenResponse(
-        access_token=jwt_token,
-        expires_in=JWT_EXPIRATION_HOURS * 3600,
-        user_id=user.id,
-        user_name=user.name,
-        user_email=user.email,
-    )
+    if not redirect_to:
+        redirect_to = APP_URL
+    
+    # Redirect to frontend with JWT token
+    separator = "&" if "?" in redirect_to else "?"
+    return RedirectResponse(f"{redirect_to}{separator}token={jwt_token}")
 
 
 @router.get("/me", response_model=UserResponse)
