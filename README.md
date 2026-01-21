@@ -140,8 +140,6 @@ uv run python run.py content/ml_interview_detailed_guide.md --out content
 
 **📖 For detailed development instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)**
 
-**🚀 For production deployment with OAuth, see [DEPLOYMENT.md](./DEPLOYMENT.md)**
-
 ### Quick Start
 
 **Option 1: One-command startup (easiest)**
