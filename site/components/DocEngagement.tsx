@@ -20,12 +20,25 @@ type Comment = {
   user_vote?: number | null
 }
 
-function formatDate(value: string) {
+function formatRelativeTime(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.valueOf())) {
     return value
   }
-  return date.toLocaleString()
+
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHour = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHour / 24)
+
+  if (diffSec < 60) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  if (diffHour < 24) return `${diffHour}h ago`
+  if (diffDay < 7) return `${diffDay}d ago`
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 const COMMENT_TEMPLATE = `# How to approach today's task
@@ -279,65 +292,68 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
     return { roots, repliesByParent }
   }, [comments])
 
-  const renderComment = (comment: Comment, isReply: boolean) => {
+  const renderComment = (comment: Comment, isReply: boolean, replyToName?: string) => {
     const author = comment.user_name || 'Anonymous'
     const score = comment.score ?? 0
     const userVote = comment.user_vote ?? 0
     const isVoting = Boolean(votePending[comment.id])
-    const voteDisabled = !isAuthenticated || isVoting
-    const upvoteClass = userVote === 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-    const downvoteClass = userVote === -1 ? 'text-foreground font-semibold' : 'text-muted-foreground'
-    const avatarClass = isReply
-      ? 'h-7 w-7 shrink-0 rounded-full border border-border bg-muted text-[10px] font-semibold text-muted-foreground flex items-center justify-center'
-      : 'h-9 w-9 shrink-0 rounded-full border border-border bg-muted text-xs font-semibold text-muted-foreground flex items-center justify-center'
+    const helpfulDisabled = !isAuthenticated || isVoting
+    const isHelpful = userVote === 1
 
     return (
-      <div key={comment.id} className={isReply ? 'flex gap-3 pl-9' : 'flex gap-3'}>
-        <div className={avatarClass}>{getInitials(comment.user_name)}</div>
-        <div className="flex-1">
-          <article className="rounded-lg border border-border bg-card">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              <span className="text-foreground font-medium">{author}</span>
-              <span>{formatDate(comment.created_at)}</span>
+      <div key={comment.id} className="group">
+        <div className="flex gap-3">
+          <div className="h-8 w-8 shrink-0 rounded-full bg-muted text-xs font-medium text-muted-foreground flex items-center justify-center">
+            {getInitials(comment.user_name)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-medium text-foreground">{author}</span>
+              {isReply && replyToName && (
+                <span className="text-muted-foreground">
+                  replying to <span className="text-foreground/70">@{replyToName}</span>
+                </span>
+              )}
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground text-xs">{formatRelativeTime(comment.created_at)}</span>
             </div>
-            <div className="px-3 py-3">
+            <div className="mt-1.5">
               <MarkdownRenderer
                 content={comment.body}
                 className={COMMENT_PROSE_CLASS}
               />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={upvoteClass}
-                  disabled={voteDisabled}
-                  onClick={() => handleVote(comment, 1)}
+            <div className="flex items-center gap-4 mt-2 text-sm">
+              <button
+                className={`inline-flex items-center gap-1.5 transition-colors ${
+                  isHelpful
+                    ? 'text-foreground font-medium'
+                    : 'text-muted-foreground hover:text-foreground'
+                } ${helpfulDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                disabled={helpfulDisabled}
+                onClick={() => handleVote(comment, 1)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="w-4 h-4"
                 >
-                  +1
-                </Button>
-                <span className="min-w-[20px] text-center">{score}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={downvoteClass}
-                  disabled={voteDisabled}
-                  onClick={() => handleVote(comment, -1)}
-                >
-                  -1
-                </Button>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
+                  <path d="M1 8.25a1.25 1.25 0 1 1 2.5 0v7.5a1.25 1.25 0 1 1-2.5 0v-7.5ZM11 3V1.7c0-.268.14-.526.395-.607A2 2 0 0 1 14 3c0 .995-.182 1.948-.514 2.826-.204.54.166 1.174.744 1.174h2.52c1.243 0 2.261 1.01 2.146 2.247a23.864 23.864 0 0 1-1.341 5.974 1.749 1.749 0 0 1-1.633 1.201H11.75a.75.75 0 0 0-.75.75v.25a.75.75 0 0 0 .75.75h5.07c.934 0 1.788-.562 2.148-1.425a25.24 25.24 0 0 0 1.532-6.91c.165-1.769-1.278-3.237-3.053-3.237h-2.52c-.383 0-.573-.464-.385-.81.35-.638.585-1.34.693-2.083.064-.44-.003-.895-.165-1.312a.75.75 0 0 0-.699-.479c-.09 0-.18.01-.268.028a.75.75 0 0 0-.567.523A3.502 3.502 0 0 1 10.25 4H6.75a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75H8V3h3Z" />
+                </svg>
+                {score > 0 ? `Helpful (${score})` : 'Helpful'}
+              </button>
+              <button
+                className={`text-muted-foreground hover:text-foreground transition-colors ${
+                  !isAuthenticated ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
                 onClick={() => handleStartReply(comment)}
                 disabled={!isAuthenticated}
               >
                 Reply
-              </Button>
+              </button>
             </div>
-          </article>
+          </div>
         </div>
       </div>
     )
@@ -345,44 +361,64 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
 
   return (
     <section className="mt-12 space-y-6">
-      <div className="rounded-lg border border-border bg-card">
-        <div className="border-b border-border px-4 py-3 space-y-1">
-          <h3 className="text-lg font-semibold text-foreground">Discussion</h3>
-          <p className="text-sm text-muted-foreground">
-            Ask questions, share solutions, and explain reasoning.
-          </p>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Comments</h3>
+            <p className="text-sm text-muted-foreground">
+              Share your approach or ask questions
+            </p>
+          </div>
+          <span className="text-sm text-muted-foreground">
+            {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+          </span>
         </div>
 
-        <div className="space-y-4 p-4">
-          <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
-            <Button
-              variant={composerTab === 'write' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setComposerTab('write')}
-            >
-              Write
-            </Button>
-            <Button
-              variant={composerTab === 'preview' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setComposerTab('preview')}
-            >
-              Preview
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleInsertTemplate}>
-              Outline
-            </Button>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-muted text-xs font-medium text-muted-foreground flex items-center justify-center">
+              {getInitials(user?.name)}
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <button
+                className={`px-2 py-1 rounded transition-colors ${
+                  composerTab === 'write'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setComposerTab('write')}
+              >
+                Write
+              </button>
+              <button
+                className={`px-2 py-1 rounded transition-colors ${
+                  composerTab === 'preview'
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                onClick={() => setComposerTab('preview')}
+              >
+                Preview
+              </button>
+              <span className="text-muted-foreground/50">|</span>
+              <button
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleInsertTemplate}
+              >
+                Use template
+              </button>
+            </div>
           </div>
 
           {composerTab === 'write' ? (
             <Textarea
               value={commentDraft}
               onChange={event => setCommentDraft(event.target.value)}
-              placeholder="Write your comment... (Markdown supported)"
-              className="min-h-[220px]"
+              placeholder="Share your solution, ask a question, or explain your reasoning..."
+              className="min-h-[120px] text-sm"
             />
           ) : (
-            <div className="rounded-md border border-border bg-background p-3">
+            <div className="rounded-md border border-border bg-background p-3 min-h-[120px]">
               {!hasDraft ? (
                 <p className="text-sm text-muted-foreground">
                   Nothing to preview yet.
@@ -396,66 +432,85 @@ export function DocEngagement({ contentSlug }: { contentSlug: string }) {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              onClick={handleSubmitComment}
-              disabled={commentSubmitting || !isAuthenticated}
-            >
-              {commentSubmitting ? 'Posting...' : 'Post comment'}
-            </Button>
-            {!isAuthenticated && (
-              <span className="text-xs text-muted-foreground">
-                Sign in to post.
-              </span>
-            )}
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-muted-foreground">
+              Markdown supported
+            </span>
+            <div className="flex items-center gap-3">
+              {!isAuthenticated && (
+                <span className="text-xs text-muted-foreground">
+                  Sign in to post
+                </span>
+              )}
+              <Button
+                size="sm"
+                onClick={handleSubmitComment}
+                disabled={commentSubmitting || !isAuthenticated}
+              >
+                {commentSubmitting ? 'Posting...' : 'Post'}
+              </Button>
+            </div>
           </div>
 
           {commentsError && (
-            <p className="text-sm text-destructive">{commentsError}</p>
+            <p className="text-sm text-destructive mt-2">{commentsError}</p>
           )}
         </div>
       </div>
 
       {commentsLoading ? (
-        <p className="text-sm text-muted-foreground">Loading comments...</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">Loading comments...</p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No comments yet.</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">No comments yet. Be the first to share your approach.</p>
       ) : (
-        <div className="space-y-6">
+        <div className="divide-y divide-border">
           {commentThreads.roots.map(root => {
             const replies = commentThreads.repliesByParent.get(root.id) ?? []
+            const rootAuthor = root.user_name || 'Anonymous'
             return (
-              <div key={root.id} className="space-y-3">
-                {renderComment(root, false)}
-                {replies.map(reply => renderComment(reply, true))}
+              <div key={root.id}>
+                <div className="py-4">
+                  {renderComment(root, false)}
+                </div>
+                {replies.map(reply => (
+                  <div key={reply.id} className="py-4 border-t border-border/50 ml-11">
+                    {renderComment(reply, true, rootAuthor)}
+                  </div>
+                ))}
                 {replyTarget && replyTarget.parentId === root.id && (
-                  <div className="flex gap-3 pl-9">
-                    <div className="h-7 w-7 shrink-0 rounded-full border border-border bg-muted text-[10px] font-semibold text-muted-foreground flex items-center justify-center">
-                      {getInitials(user?.name)}
-                    </div>
-                    <div className="flex-1 rounded-lg border border-border bg-card">
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                        <span>Replying to {replyTarget.replyToName}</span>
-                        <Button variant="ghost" size="sm" onClick={handleCancelReply}>
-                          Cancel
-                        </Button>
+                  <div className="py-4 border-t border-border/50 ml-11">
+                    <div className="flex gap-3">
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-muted text-xs font-medium text-muted-foreground flex items-center justify-center">
+                        {getInitials(user?.name)}
                       </div>
-                      <div className="space-y-2 px-3 py-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="text-muted-foreground">
+                            Replying to <span className="text-foreground/70">@{replyTarget.replyToName}</span>
+                          </span>
+                          <button
+                            className="text-muted-foreground hover:text-foreground text-xs"
+                            onClick={handleCancelReply}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                         <Textarea
                           value={replyDraft}
                           onChange={event => setReplyDraft(event.target.value)}
                           placeholder="Write your reply..."
-                          className="min-h-[140px]"
+                          className="min-h-[100px] text-sm"
                         />
                         {replyError && (
-                          <p className="text-sm text-destructive">{replyError}</p>
+                          <p className="text-sm text-destructive mt-2">{replyError}</p>
                         )}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 mt-2">
                           <Button
+                            size="sm"
                             onClick={handleSubmitReply}
                             disabled={replySubmitting || !isAuthenticated}
                           >
-                            {replySubmitting ? 'Posting...' : 'Post reply'}
+                            {replySubmitting ? 'Posting...' : 'Reply'}
                           </Button>
                         </div>
                       </div>
