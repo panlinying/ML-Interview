@@ -175,9 +175,12 @@ uv sync && uv run uvicorn api.index:app --reload --port 8000
 # Go to https://railway.app
 # New Project → Deploy from GitHub → Select your repo
 # Add PostgreSQL: Click "+ New" → Database → PostgreSQL
-# Add environment variables (see below)
-# Settings → Networking → Generate Domain
 ```
+
+**IMPORTANT:** After adding PostgreSQL, you MUST manually add environment variables:
+1. Click on PostgreSQL service → "Connect" tab → Copy the DATABASE_URL
+2. Click on your backend service → "Variables" tab
+3. Add ALL variables listed below (Railway doesn't auto-link them)
 
 **2. Deploy Frontend to Vercel**
 ```bash
