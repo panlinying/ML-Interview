@@ -102,8 +102,7 @@ git push
 ### Step 5: Initialize Database (1 min)
 
 ```bash
-curl -X POST https://www.aceinterview.online/api/init-db \
-  -H "X-Admin-Secret: your_admin_secret_from_env_local"
+https://www.aceinterview.online/api/init-db?admin_secret=your_admin_secret_from_env_local
 ```
 
 ### Step 6: Test (2 min)

@@ -212,16 +212,22 @@ def health_check():
     return {"status": "ok", "message": "ML Interview API"}
 
 
-@app.post("/api/init-db")
+@app.get("/api/init-db")
 def initialize_database(
-    _: bool = Depends(verify_admin_secret)
+    admin_secret: str,
+    db=Depends(get_db)
 ):
     """Initialize database tables (protected by admin secret)."""
+    # Verify admin secret
+    if admin_secret != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid admin secret")
+    
     try:
         init_db()
         return {"status": "ok", "message": "Database initialized"}
-    except Exception:
-        # Don't expose internal error details
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Database initialization error: {e}")
         raise HTTPException(status_code=500, detail="Database initialization failed")
 
 

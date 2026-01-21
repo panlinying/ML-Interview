@@ -126,26 +126,25 @@ git push
 
 ### 4.2 Initialize Tables
 
-Use `curl` to send a POST request:
+Simply visit this URL in your browser:
 
-```bash
-curl -X POST "https://YOUR-RAILWAY-URL.up.railway.app/api/init-db" \
-  -H "X-Admin-Secret: YOUR_ADMIN_SECRET"
+```
+https://YOUR-RAILWAY-URL.up.railway.app/api/init-db?admin_secret=YOUR_ADMIN_SECRET
 ```
 
 Replace:
-- `YOUR-RAILWAY-URL` with your Railway domain (e.g., `ml-interview-production.up.railway.app`)
+- `YOUR-RAILWAY-URL` with your Railway domain (e.g., `web-production-cb42.up.railway.app`)
 - `YOUR_ADMIN_SECRET` with the value from your `.env.local`
+
+**Example:**
+```
+https://web-production-cb42.up.railway.app/api/init-db?admin_secret=0c02a84163aa2b04eca4f6ff5650789c8f7cc7426b0d3461b2fbc06ae7dc0d5f
+```
 
 **Expected response:**
 ```json
 {"status": "ok", "message": "Database initialized"}
 ```
-
-**Alternative (using browser extension like Postman):**
-- Method: `POST`
-- URL: `https://YOUR-RAILWAY-URL.up.railway.app/api/init-db`
-- Headers: `X-Admin-Secret: YOUR_ADMIN_SECRET`
 
 ---
 
