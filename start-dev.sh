@@ -46,8 +46,9 @@ echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
 
-# Unset NEXT_PUBLIC_BASE_PATH for local development (should be empty or start with /)
+# Unset these for local development
 unset NEXT_PUBLIC_BASE_PATH
+unset NEXT_STATIC_EXPORT
 
 # Start both services in background
 (cd site && npm run dev) &
