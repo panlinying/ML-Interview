@@ -59,6 +59,18 @@ def run_migrations() -> None:
         CREATE INDEX IF NOT EXISTS questions_leetcode_number_idx
         ON questions(leetcode_number);
         """,
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0;
+        """,
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0;
+        """,
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS last_activity_date TIMESTAMP;
+        """,
     ]
 
     engine = create_engine(get_database_url(), pool_pre_ping=True)
