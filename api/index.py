@@ -18,6 +18,7 @@ from pydantic import BaseModel, field_validator
 from typing import Optional, List
 import httpx
 from sqlalchemy import func, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, ProblemProgress, ProblemDetail, ProblemTestCase, ProblemReference, init_db
@@ -1408,7 +1409,22 @@ def get_problem_detail(
         fetched_at=now,
     )
     db.add(record)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = db.query(ProblemDetail).filter(ProblemDetail.slug == normalized).first()
+        if existing:
+            if not existing.description_html:
+                existing.title = detail["title"]
+                existing.description_html = detail["description_html"]
+                existing.difficulty = detail["difficulty"]
+                existing.source = "leetcode"
+                existing.fetched_at = now
+                db.commit()
+                db.refresh(existing)
+            return ProblemDetailResponse.model_validate(existing)
+        raise HTTPException(status_code=500, detail="Failed to store problem description.")
     db.refresh(record)
     return ProblemDetailResponse.model_validate(record)
 
