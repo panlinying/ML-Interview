@@ -540,45 +540,36 @@ function PracticeContent() {
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-border bg-card px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="flex-shrink-0 border-b border-border bg-card px-4 py-2">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-4">
             <Link href="/problems" className="text-muted-foreground hover:text-foreground">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">
-                {headerTitle}
-              </h1>
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg font-semibold text-foreground">
+                  {headerTitle}
+                </h1>
                 {displayDifficulty && (
                   <span className={`px-2 py-0.5 rounded border text-xs ${DIFFICULTY_COLORS[displayDifficulty] || ''}`}>
                     {displayDifficulty}
                   </span>
                 )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 {problem?.pattern && (
                   <span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs">
                     {problem.pattern}
                   </span>
                 )}
-                <a
-                  href={leetcodeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground flex items-center gap-1"
-                >
-                  <span>View on LeetCode</span>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Timer */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
               <span className="font-mono text-sm">{formatTime(timer)}</span>
@@ -624,9 +615,9 @@ function PracticeContent() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-w-0">
         {/* Left Panel - Problem Description */}
-        <div className="w-1/2 border-r border-border overflow-auto p-6">
+        <div className="flex-1 lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border overflow-auto p-6 min-h-0 min-w-0">
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-li:my-1">
             {detailLoading && (
               <p className="text-muted-foreground">Loading description...</p>
@@ -670,7 +661,7 @@ function PracticeContent() {
             {complexity && (
               <div className="mt-6 p-4 rounded-lg border border-border bg-gradient-to-r from-blue-500/5 to-purple-500/5">
                 <h3 className="text-base font-medium mb-3">Optimal Complexity</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Time:</span>
                     <span className="ml-2 font-mono font-medium text-blue-500">
@@ -768,7 +759,7 @@ function PracticeContent() {
             {problem && (
               <div className="mt-6 p-4 rounded-lg border border-border">
                 <h3 className="text-base font-medium mb-3">Your Stats</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Attempts:</span>
                     <span className="ml-2 font-medium">{problem.attempts}</span>
@@ -778,7 +769,7 @@ function PracticeContent() {
                     <span className="ml-2 font-medium">{problem.time_spent_minutes}m</span>
                   </div>
                   {problem.solved_at && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <span className="text-muted-foreground">First Solved:</span>
                       <span className="ml-2 font-medium text-green-500">
                         {new Date(problem.solved_at).toLocaleDateString()}
@@ -792,51 +783,89 @@ function PracticeContent() {
         </div>
 
         {/* Right Panel - Code Editor */}
-        <div className="w-1/2 flex flex-col overflow-hidden">
-          {/* Language Label */}
+        <div className="flex-1 lg:w-1/2 flex flex-col overflow-hidden min-h-0 min-w-0">
+          {/* Editor Controls */}
           <div className="flex-shrink-0 border-b border-border px-4 py-2 bg-muted/30">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 text-sm rounded bg-primary text-primary-foreground">
-                  Python
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Write your solution using Python 3
-                </span>
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Python</span>
+                  <span>•</span>
+                  <span>{code.split('\n').length} lines</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <label className="text-muted-foreground" htmlFor="editor-theme">
+                    Theme
+                  </label>
+                  <select
+                    id="editor-theme"
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                    value={editorTheme}
+                    onChange={e => setEditorTheme(e.target.value)}
+                  >
+                    {THEME_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <label className="text-muted-foreground" htmlFor="editor-indent">
+                    Indent
+                  </label>
+                  <select
+                    id="editor-indent"
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                    value={indentValue}
+                    onChange={e => handleIndentChange(e.target.value)}
+                  >
+                    {INDENT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <label className="text-muted-foreground" htmlFor="editor-theme">
-                  Theme
-                </label>
-                <select
-                  id="editor-theme"
-                  className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                  value={editorTheme}
-                  onChange={e => setEditorTheme(e.target.value)}
+              <div className="flex flex-wrap gap-2">
+                {isAuthenticated ? (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={judgeLoading}
+                      onClick={() => handleJudge('run')}
+                    >
+                      {judgeLoading && judgeMode === 'run' ? 'Running...' : 'Run'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={judgeLoading}
+                      onClick={() => handleJudge('submit')}
+                    >
+                      {judgeLoading && judgeMode === 'submit' ? 'Submitting...' : 'Submit'}
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => login('github', `/practice?problem=${slug}`)} size="sm">
+                    Sign in to Run
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
                 >
-                  {THEME_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-                <label className="text-muted-foreground" htmlFor="editor-indent">
-                  Indent
-                </label>
-                <select
-                  id="editor-indent"
-                  className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                  value={indentValue}
-                  onChange={e => handleIndentChange(e.target.value)}
+                  Reset
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigator.clipboard.writeText(code)}
                 >
-                  {INDENT_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                  Copy Code
+                </Button>
               </div>
             </div>
           </div>
 
           {/* Code Editor */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden min-w-0">
             <MonacoEditor
               height="100%"
               width="100%"
@@ -931,55 +960,6 @@ function PracticeContent() {
             </div>
           )}
 
-          {/* Bottom Actions */}
-          <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-muted/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Python</span>
-                <span>•</span>
-                <span>{code.split('\n').length} lines</span>
-              </div>
-              <div className="flex gap-2">
-                {isAuthenticated ? (
-                  <>
-                    <Button
-                      size="sm"
-                      disabled={judgeLoading}
-                      onClick={() => handleJudge('run')}
-                    >
-                      {judgeLoading && judgeMode === 'run' ? 'Running...' : 'Run'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={judgeLoading}
-                      onClick={() => handleJudge('submit')}
-                    >
-                      {judgeLoading && judgeMode === 'submit' ? 'Submitting...' : 'Submit'}
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => login('github', `/practice?problem=${slug}`)} size="sm">
-                    Sign in to Run
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                >
-                  Reset
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(code)}
-                >
-                  Copy Code
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

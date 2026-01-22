@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTheme } from './ThemeProvider'
-import { SearchCommand } from './SearchCommand'
 import { Button } from '@/components/ui/button'
 import { AccountButton } from '@/components/AccountButton'
 import { useAuth } from '@/lib/useAuth'
@@ -64,10 +63,8 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex-1 lg:pl-0 pl-12">
-          <SearchCommand />
-        </div>
+      <div className="flex items-center justify-between px-6 py-2">
+        <div className="flex-1 lg:pl-0 pl-12" />
 
         <div className="flex items-center gap-2">
           {/* Streak indicator */}
