@@ -131,6 +131,38 @@ class ProblemDetail(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class ProblemTestCase(Base):
+    __tablename__ = "problem_test_cases"
+
+    id = Column(Integer, primary_key=True, index=True)
+    problem_id = Column(String(100), nullable=False, index=True)
+    input_text = Column(Text, nullable=False)
+    expected_output = Column(Text, nullable=False)
+    is_hidden = Column(Boolean, default=False, nullable=False)
+    time_limit_ms = Column(Integer, default=2000)
+    slow_limit_ms = Column(Integer, default=4000)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("problem_id", "input_text", "expected_output", name="uq_problem_test_case"),
+    )
+
+
+class ProblemReference(Base):
+    __tablename__ = "problem_references"
+
+    id = Column(Integer, primary_key=True, index=True)
+    problem_id = Column(String(100), nullable=False, unique=True, index=True)
+    language = Column(String(20), nullable=False, default="python")
+    solution_code = Column(Text, nullable=False)
+    starter_code = Column(Text, nullable=True)  # LeetCode starter template
+    optimal_time_complexity = Column(String(50))
+    optimal_space_complexity = Column(String(50))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Session(Base):
     """Store OAuth state tokens and other temporary session data."""
     __tablename__ = "sessions"
@@ -160,7 +192,7 @@ class ProblemProgress(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    problem_id = Column(String(50), nullable=False, index=True)  # e.g., "lc-1" for LeetCode #1
+    problem_id = Column(String(100), nullable=False, index=True)  # e.g., "lc-two-sum"
     problem_name = Column(String(500), nullable=False)
     difficulty = Column(String(20))  # easy, medium, hard
     pattern = Column(String(100))  # e.g., "two-pointers", "sliding-window"

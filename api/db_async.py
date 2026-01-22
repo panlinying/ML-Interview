@@ -25,6 +25,8 @@ from .db import (
     Question,
     CommentVote,
     ProblemDetail,
+    ProblemTestCase,
+    ProblemReference,
     Base as SyncBase,
 )
 
@@ -123,4 +125,6 @@ __all__ = [
     "Question",
     "CommentVote",
     "ProblemDetail",
+    "ProblemTestCase",
+    "ProblemReference",
 ]

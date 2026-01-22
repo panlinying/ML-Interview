@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 1,
+    "problem_id": "lc-two-sum",
+    "title": "Two Sum",
+    "slug": "two-sum",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        seen = {}\n        for i, num in enumerate(nums):\n            complement = target - num\n            if complement in seen:\n                return [seen[complement], i]\n            seen[num] = i\n        return []",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 121,
+    "problem_id": "lc-best-time-to-buy-and-sell-stock",
+    "title": "Best Time to Buy and Sell Stock",
+    "slug": "best-time-to-buy-and-sell-stock",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def maxProfit(self, prices: List[int]) -> int:\n        min_price = float('inf')\n        best = 0\n        for price in prices:\n            if price < min_price:\n                min_price = price\n            else:\n                best = max(best, price - min_price)\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 217,
+    "problem_id": "lc-contains-duplicate",
+    "title": "Contains Duplicate",
+    "slug": "contains-duplicate",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def containsDuplicate(self, nums: List[int]) -> bool:\n        seen = set()\n        for num in nums:\n            if num in seen:\n                return True\n            seen.add(num)\n        return False",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 238,
+    "problem_id": "lc-product-of-array-except-self",
+    "title": "Product of Array Except Self",
+    "slug": "product-of-array-except-self",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        result = [1] * n\n        prefix = 1\n        for i in range(n):\n            result[i] = prefix\n            prefix *= nums[i]\n        suffix = 1\n        for i in range(n - 1, -1, -1):\n            result[i] *= suffix\n            suffix *= nums[i]\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 53,
+    "problem_id": "lc-maximum-subarray",
+    "title": "Maximum Subarray",
+    "slug": "maximum-subarray",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def maxSubArray(self, nums: List[int]) -> int:\n        best = nums[0]\n        current = nums[0]\n        for num in nums[1:]:\n            current = max(num, current + num)\n            best = max(best, current)\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 152,
+    "problem_id": "lc-maximum-product-subarray",
+    "title": "Maximum Product Subarray",
+    "slug": "maximum-product-subarray",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def maxProduct(self, nums: List[int]) -> int:\n        max_here = nums[0]\n        min_here = nums[0]\n        best = nums[0]\n        for num in nums[1:]:\n            if num < 0:\n                max_here, min_here = min_here, max_here\n            max_here = max(num, max_here * num)\n            min_here = min(num, min_here * num)\n            best = max(best, max_here)\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 153,
+    "problem_id": "lc-find-minimum-in-rotated-sorted-array",
+    "title": "Find Minimum in Rotated Sorted Array",
+    "slug": "find-minimum-in-rotated-sorted-array",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def findMin(self, nums: List[int]) -> int:\n        left, right = 0, len(nums) - 1\n        while left < right:\n            mid = (left + right) // 2\n            if nums[mid] > nums[right]:\n                left = mid + 1\n            else:\n                right = mid\n        return nums[left]",
+    "optimal_time_complexity": "O(log n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 33,
+    "problem_id": "lc-search-in-rotated-sorted-array",
+    "title": "Search in Rotated Sorted Array",
+    "slug": "search-in-rotated-sorted-array",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        left, right = 0, len(nums) - 1\n        while left <= right:\n            mid = (left + right) // 2\n            if nums[mid] == target:\n                return mid\n            if nums[left] <= nums[mid]:\n                if nums[left] <= target < nums[mid]:\n                    right = mid - 1\n                else:\n                    left = mid + 1\n            else:\n                if nums[mid] < target <= nums[right]:\n                    left = mid + 1\n                else:\n                    right = mid - 1\n        return -1",
+    "optimal_time_complexity": "O(log n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 11,
+    "problem_id": "lc-container-with-most-water",
+    "title": "Container With Most Water",
+    "slug": "container-with-most-water",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def maxArea(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n            h = min(height[left], height[right])\n            best = max(best, h * (right - left))\n            if height[left] < height[right]:\n                left += 1\n            else:\n                right -= 1\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 15,
+    "problem_id": "lc-3sum",
+    "title": "3Sum",
+    "slug": "3sum",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def threeSum(self, nums: List[int]) -> List[List[int]]:\n        nums.sort()\n        result = []\n        n = len(nums)\n        for i in range(n):\n            if i > 0 and nums[i] == nums[i - 1]:\n                continue\n            if nums[i] > 0:\n                break\n            left, right = i + 1, n - 1\n            while left < right:\n                total = nums[i] + nums[left] + nums[right]\n                if total == 0:\n                    result.append([nums[i], nums[left], nums[right]])\n                    left += 1\n                    right -= 1\n                    while left < right and nums[left] == nums[left - 1]:\n                        left += 1\n                    while left < right and nums[right] == nums[right + 1]:\n                        right -= 1\n                elif total < 0:\n                    left += 1\n                else:\n                    right -= 1\n        return result",
+    "optimal_time_complexity": "O(n^2)",
+    "optimal_space_complexity": "O(1)"
+  }
+]

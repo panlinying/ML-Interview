@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useAuth } from '@/lib/useAuth'
 import { apiRequest } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
 type Problem = {
   id: number
@@ -33,6 +36,60 @@ type ProblemDetail = {
   updated_at: string | null
 }
 
+type JudgeSummary = {
+  total: number
+  passed: number
+  slow: number
+  failed: number
+}
+
+type JudgeCaseResult = {
+  id: number
+  status: string
+  time_ms: number
+  reason: string | null
+  input_text?: string | null
+  expected_output?: string | null
+  actual_output?: string | null
+  stderr?: string | null
+  is_hidden: boolean
+}
+
+type JudgeResult = {
+  status: string
+  summary: JudgeSummary
+  results: JudgeCaseResult[]
+}
+
+type ProblemComplexity = {
+  problem_id: string
+  optimal_time_complexity: string | null
+  optimal_space_complexity: string | null
+}
+
+type ProblemSolution = {
+  problem_id: string
+  solution_code: string
+  optimal_time_complexity: string | null
+  optimal_space_complexity: string | null
+  user_solved: boolean
+}
+
+type ProblemStarterCode = {
+  problem_id: string
+  starter_code: string | null
+  optimal_time_complexity: string | null
+  optimal_space_complexity: string | null
+}
+
+type CodeSource = 'empty' | 'template' | 'starter' | 'notes' | 'storage'
+
+type EditorSettings = {
+  theme: string
+  tabSize: number
+  insertSpaces: boolean
+}
+
 const DIFFICULTY_COLORS: Record<string, string> = {
   easy: 'text-green-500 bg-green-500/10 border-green-500/30',
   medium: 'text-amber-500 bg-amber-500/10 border-amber-500/30',
@@ -46,14 +103,44 @@ const STATUS_OPTIONS = [
   { value: 'need_review', label: 'Need Review' },
 ]
 
-const LANGUAGE_TEMPLATES: Record<string, string> = {
-  python: `# Python solution
+const PYTHON_TEMPLATE = `# Python solution
 class Solution:
     def solve(self, nums):
         # Your code here
         pass
-`,
+`
+
+const JUDGE_STATUS_STYLES: Record<string, string> = {
+  pass: 'text-green-600',
+  pass_slow: 'text-amber-600',
+  fail: 'text-red-600',
+  slow: 'text-amber-600',
 }
+
+const CODE_SOURCE_PRIORITY: Record<CodeSource, number> = {
+  empty: 0,
+  template: 1,
+  starter: 2,
+  notes: 3,
+  storage: 4,
+}
+
+const EDITOR_SETTINGS_KEY = 'practice:editor-settings'
+
+const THEME_OPTIONS = [
+  { value: 'vs-dark', label: 'VS Dark' },
+  { value: 'vs-light', label: 'VS Light' },
+  { value: 'hc-black', label: 'High Contrast' },
+]
+
+const INDENT_OPTIONS = [
+  { value: 'spaces-2', label: '2 spaces', tabSize: 2, insertSpaces: true },
+  { value: 'spaces-4', label: '4 spaces', tabSize: 4, insertSpaces: true },
+  { value: 'spaces-8', label: '8 spaces', tabSize: 8, insertSpaces: true },
+  { value: 'tabs-2', label: 'Tabs (width 2)', tabSize: 2, insertSpaces: false },
+  { value: 'tabs-4', label: 'Tabs (width 4)', tabSize: 4, insertSpaces: false },
+  { value: 'tabs-8', label: 'Tabs (width 8)', tabSize: 8, insertSpaces: false },
+]
 
 function parseLeetCodeSlug(slug: string): { number: string; name: string; fullName: string } {
   const decoded = decodeURIComponent(slug)
@@ -79,6 +166,22 @@ function guessDifficulty(name: string): string | null {
   return 'medium'
 }
 
+function extractCodeFromNotes(notes: string | null | undefined): string | null {
+  if (!notes) return null
+  const regex = /```(?:python)?\r?\n([\s\S]*?)```/g
+  let match: RegExpExecArray | null
+  let lastMatch: string | null = null
+  while ((match = regex.exec(notes)) !== null) {
+    lastMatch = match[1]
+  }
+  return lastMatch ? lastMatch.replace(/\s+$/, '') : null
+}
+
+function getIndentOptionValue(tabSize: number, insertSpaces: boolean): string {
+  const key = `${insertSpaces ? 'spaces' : 'tabs'}-${tabSize}`
+  return INDENT_OPTIONS.some(option => option.value === key) ? key : 'spaces-4'
+}
+
 function PracticeContent() {
   const searchParams = useSearchParams()
   const slug = searchParams.get('problem') || ''
@@ -87,7 +190,8 @@ function PracticeContent() {
   const [problem, setProblem] = useState<Problem | null>(null)
   const [loading, setLoading] = useState(true)
   const [code, setCode] = useState('')
-  const [language, setLanguage] = useState('python')
+  const [isCodeReady, setIsCodeReady] = useState(false)
+  const [, setCodeSource] = useState<CodeSource>('empty')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState('not_started')
   const [saving, setSaving] = useState(false)
@@ -97,12 +201,53 @@ function PracticeContent() {
   const [problemDetail, setProblemDetail] = useState<ProblemDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const [judgeResult, setJudgeResult] = useState<JudgeResult | null>(null)
+  const [judgeLoading, setJudgeLoading] = useState(false)
+  const [judgeError, setJudgeError] = useState<string | null>(null)
+  const [judgeMode, setJudgeMode] = useState<'run' | 'submit' | null>(null)
+  const [complexity, setComplexity] = useState<ProblemComplexity | null>(null)
+  const [starterCode, setStarterCode] = useState<string | null>(null)
+  const [solution, setSolution] = useState<ProblemSolution | null>(null)
+  const [solutionLoading, setSolutionLoading] = useState(false)
+  const [solutionError, setSolutionError] = useState<string | null>(null)
+  const [showSolution, setShowSolution] = useState(false)
+  const [settingsHydrated, setSettingsHydrated] = useState(false)
+  const [editorTheme, setEditorTheme] = useState('vs-dark')
+  const [tabSize, setTabSize] = useState(4)
+  const [insertSpaces, setInsertSpaces] = useState(true)
+
+  const codeSourceRef = useRef<CodeSource>('empty')
 
   const problemInfo = parseLeetCodeSlug(slug)
   const problemId = `lc-${slug}`
   const leetcodeUrl = `https://leetcode.com/problems/${slug}/`
   const headerTitle = problemInfo.fullName || problemDetail?.title || 'Practice Problem'
   const displayDifficulty = problem?.difficulty || problemDetail?.difficulty || null
+  const codeStorageKey = slug ? `practice:code:${problemId}` : null
+  const indentValue = getIndentOptionValue(tabSize, insertSpaces)
+
+  const applyCode = useCallback((nextCode: string, nextSource: CodeSource) => {
+    const currentSource = codeSourceRef.current
+    if (CODE_SOURCE_PRIORITY[nextSource] <= CODE_SOURCE_PRIORITY[currentSource]) return
+    codeSourceRef.current = nextSource
+    setCodeSource(nextSource)
+    setCode(nextCode)
+    setIsCodeReady(true)
+  }, [])
+  const handleIndentChange = useCallback((value: string) => {
+    const selected = INDENT_OPTIONS.find(option => option.value === value)
+    if (!selected) return
+    setTabSize(selected.tabSize)
+    setInsertSpaces(selected.insertSpaces)
+  }, [])
+  const handleReset = useCallback(() => {
+    const nextCode = starterCode || PYTHON_TEMPLATE
+    const nextSource: CodeSource = starterCode ? 'starter' : 'template'
+    codeSourceRef.current = nextSource
+    setCodeSource(nextSource)
+    setCode(nextCode)
+    setIsCodeReady(true)
+  }, [starterCode])
 
   // Timer effect
   useEffect(() => {
@@ -150,6 +295,86 @@ function PracticeContent() {
     }
   }, [slug])
 
+  useEffect(() => {
+    codeSourceRef.current = 'empty'
+    setCodeSource('empty')
+    setCode('')
+    setIsCodeReady(false)
+  }, [slug])
+
+  useEffect(() => {
+    if (!codeStorageKey) return
+    const stored = localStorage.getItem(codeStorageKey)
+    if (stored !== null) {
+      applyCode(stored, 'storage')
+    }
+  }, [codeStorageKey, applyCode])
+
+  useEffect(() => {
+    if (!codeStorageKey || !isCodeReady) return
+    localStorage.setItem(codeStorageKey, code)
+  }, [codeStorageKey, code, isCodeReady])
+
+  useEffect(() => {
+    const storedSettings = localStorage.getItem(EDITOR_SETTINGS_KEY)
+    if (!storedSettings) {
+      setSettingsHydrated(true)
+      return
+    }
+    try {
+      const parsed = JSON.parse(storedSettings) as Partial<EditorSettings>
+      if (parsed.theme && THEME_OPTIONS.some(option => option.value === parsed.theme)) {
+        setEditorTheme(parsed.theme)
+      }
+      if (typeof parsed.tabSize === 'number' && [2, 4, 8].includes(parsed.tabSize)) {
+        setTabSize(parsed.tabSize)
+      }
+      if (typeof parsed.insertSpaces === 'boolean') {
+        setInsertSpaces(parsed.insertSpaces)
+      }
+    } catch {
+      setSettingsHydrated(true)
+      return
+    }
+    setSettingsHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!settingsHydrated) return
+    const payload: EditorSettings = {
+      theme: editorTheme,
+      tabSize,
+      insertSpaces,
+    }
+    localStorage.setItem(EDITOR_SETTINGS_KEY, JSON.stringify(payload))
+  }, [editorTheme, tabSize, insertSpaces, settingsHydrated])
+
+  // Load starter code and complexity info
+  useEffect(() => {
+    if (!slug) return
+
+    apiRequest<ProblemStarterCode>(`/api/problems/${problemId}/starter`)
+      .then(data => {
+        setStarterCode(data.starter_code)
+        setComplexity({
+          problem_id: data.problem_id,
+          optimal_time_complexity: data.optimal_time_complexity,
+          optimal_space_complexity: data.optimal_space_complexity,
+        })
+      })
+      .catch(() => {
+        setStarterCode(null)
+        setComplexity(null)
+      })
+  }, [slug, problemId])
+
+  // Update code when starter code loads
+  useEffect(() => {
+    if (starterCode) {
+      applyCode(starterCode, 'starter')
+    }
+  }, [starterCode, applyCode])
+
   // Load existing problem data
   useEffect(() => {
     if (!slug) {
@@ -159,7 +384,7 @@ function PracticeContent() {
     if (authLoading) return
     if (!isAuthenticated || !token) {
       setLoading(false)
-      setCode(LANGUAGE_TEMPLATES[language])
+      applyCode(PYTHON_TEMPLATE, 'template')
       return
     }
 
@@ -171,21 +396,18 @@ function PracticeContent() {
           setStatus(existing.status)
           setNotes(existing.notes || '')
           setTimer((existing.time_spent_minutes || 0) * 60)
+          const extractedCode = extractCodeFromNotes(existing.notes)
+          if (extractedCode) {
+            applyCode(extractedCode, 'notes')
+          }
         }
-        setCode(LANGUAGE_TEMPLATES[language])
+        applyCode(PYTHON_TEMPLATE, 'template')
       })
       .catch(() => {
-        setCode(LANGUAGE_TEMPLATES[language])
+        applyCode(PYTHON_TEMPLATE, 'template')
       })
       .finally(() => setLoading(false))
-  }, [isAuthenticated, token, authLoading, problemId, slug, language])
-
-  const handleLanguageChange = (newLang: string) => {
-    setLanguage(newLang)
-    if (!code || Object.values(LANGUAGE_TEMPLATES).some(t => code.trim() === t.trim())) {
-      setCode(LANGUAGE_TEMPLATES[newLang])
-    }
-  }
+  }, [isAuthenticated, token, authLoading, problemId, slug, applyCode])
 
   const handleSave = useCallback(async () => {
     if (!token || !slug) return
@@ -200,7 +422,7 @@ function PracticeContent() {
           token,
           body: {
             status,
-            notes: `${notes}\n\n---\n\n**Code (${language}):**\n\`\`\`${language}\n${code}\n\`\`\``.trim(),
+            notes: `${notes}\n\n---\n\n**Code (Python):**\n\`\`\`python\n${code}\n\`\`\``.trim(),
             time_spent_minutes: timeMinutes,
           },
         })
@@ -215,7 +437,7 @@ function PracticeContent() {
             difficulty: guessDifficulty(problemInfo.name),
             pattern: null,
             status,
-            notes: `**Code (${language}):**\n\`\`\`${language}\n${code}\n\`\`\``,
+            notes: `**Code (Python):**\n\`\`\`python\n${code}\n\`\`\``,
             time_spent_minutes: timeMinutes,
           },
         })
@@ -226,7 +448,32 @@ function PracticeContent() {
     } finally {
       setSaving(false)
     }
-  }, [token, problem, problemId, problemInfo.fullName, problemInfo.name, status, notes, code, language, timer, slug])
+  }, [token, problem, problemId, problemInfo.fullName, problemInfo.name, status, notes, code, timer, slug])
+
+  const handleJudge = useCallback(async (mode: 'run' | 'submit') => {
+    if (!token || !slug) return
+    setJudgeLoading(true)
+    setJudgeMode(mode)
+    setJudgeError(null)
+    setJudgeResult(null)
+
+    try {
+      const result = await apiRequest<JudgeResult>(`/api/problems/${problemId}/${mode}`, {
+        method: 'POST',
+        token,
+        body: {
+          code,
+          language: 'python',
+        },
+      })
+      setJudgeResult(result)
+    } catch (err) {
+      setJudgeError(err instanceof Error ? err.message : 'Failed to run tests')
+    } finally {
+      setJudgeLoading(false)
+      setJudgeMode(null)
+    }
+  }, [token, slug, problemId, code])
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600)
@@ -237,6 +484,32 @@ function PracticeContent() {
     }
     return `${m}:${s.toString().padStart(2, '0')}`
   }
+
+  const handleViewSolution = useCallback(async () => {
+    if (!token || !slug) return
+    if (solution) {
+      setShowSolution(true)
+      return
+    }
+
+    setSolutionLoading(true)
+    setSolutionError(null)
+
+    try {
+      const result = await apiRequest<ProblemSolution>(`/api/problems/${problemId}/solution`, {
+        token,
+      })
+      setSolution(result)
+      setShowSolution(true)
+    } catch (err) {
+      setSolutionError(err instanceof Error ? err.message : 'Failed to load solution')
+    } finally {
+      setSolutionLoading(false)
+    }
+  }, [token, slug, problemId, solution])
+
+  // Check if user has attempted (can view solution)
+  const hasAttempted = problem && problem.status !== 'not_started'
 
   // No problem selected
   if (!slug) {
@@ -393,6 +666,78 @@ function PracticeContent() {
               </ul>
             </div>
 
+            {/* Optimal Complexity */}
+            {complexity && (
+              <div className="mt-6 p-4 rounded-lg border border-border bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+                <h3 className="text-base font-medium mb-3">Optimal Complexity</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Time:</span>
+                    <span className="ml-2 font-mono font-medium text-blue-500">
+                      {complexity.optimal_time_complexity || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Space:</span>
+                    <span className="ml-2 font-mono font-medium text-purple-500">
+                      {complexity.optimal_space_complexity || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* View Solution Button */}
+            {isAuthenticated && (
+              <div className="mt-6">
+                {hasAttempted ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleViewSolution}
+                    disabled={solutionLoading}
+                    className="w-full"
+                  >
+                    {solutionLoading ? 'Loading...' : showSolution ? 'Hide Solution' : 'View Solution'}
+                  </Button>
+                ) : (
+                  <div className="p-3 rounded-lg border border-border bg-muted/30 text-sm text-muted-foreground text-center">
+                    Submit at least one attempt to unlock the solution
+                  </div>
+                )}
+                {solutionError && (
+                  <p className="mt-2 text-sm text-red-500">{solutionError}</p>
+                )}
+              </div>
+            )}
+
+            {/* Solution Display */}
+            {showSolution && solution && (
+              <div className="mt-4 p-4 rounded-lg border border-green-500/30 bg-green-500/5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-medium text-green-600">Reference Solution</h3>
+                  <button
+                    onClick={() => setShowSolution(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <pre className="p-3 rounded bg-[#1e1e1e] text-[#d4d4d4] text-sm font-mono overflow-x-auto whitespace-pre-wrap">
+                  {solution.solution_code}
+                </pre>
+                {solution.user_solved && (
+                  <p className="mt-3 text-xs text-green-600 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    You solved this problem!
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Notes Section */}
             <div className="mt-6">
               <button
@@ -448,49 +793,180 @@ function PracticeContent() {
 
         {/* Right Panel - Code Editor */}
         <div className="w-1/2 flex flex-col overflow-hidden">
-          {/* Language Selector */}
+          {/* Language Label */}
           <div className="flex-shrink-0 border-b border-border px-4 py-2 bg-muted/30">
-            <div className="flex gap-2">
-              {Object.keys(LANGUAGE_TEMPLATES).map(lang => (
-                <button
-                  key={lang}
-                  onClick={() => handleLanguageChange(lang)}
-                  className={`px-3 py-1 text-sm rounded transition-colors ${
-                    language === lang
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 text-sm rounded bg-primary text-primary-foreground">
+                  Python
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Write your solution using Python 3
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <label className="text-muted-foreground" htmlFor="editor-theme">
+                  Theme
+                </label>
+                <select
+                  id="editor-theme"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                  value={editorTheme}
+                  onChange={e => setEditorTheme(e.target.value)}
                 >
-                  {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                </button>
-              ))}
+                  {THEME_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <label className="text-muted-foreground" htmlFor="editor-indent">
+                  Indent
+                </label>
+                <select
+                  id="editor-indent"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                  value={indentValue}
+                  onChange={e => handleIndentChange(e.target.value)}
+                >
+                  {INDENT_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Code Editor */}
           <div className="flex-1 overflow-hidden">
-            <textarea
-              className="w-full h-full p-4 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm resize-none focus:outline-none"
+            <MonacoEditor
+              height="100%"
+              width="100%"
+              defaultLanguage="python"
+              theme={editorTheme}
               value={code}
-              onChange={e => setCode(e.target.value)}
-              spellCheck={false}
-              placeholder="Write your solution here..."
+              onChange={value => setCode(value ?? '')}
+              options={{
+                fontSize: 14,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'off',
+                tabSize,
+                insertSpaces,
+                detectIndentation: false,
+                automaticLayout: true,
+              }}
+              loading={<div className="p-4 text-sm text-muted-foreground">Loading editor...</div>}
             />
           </div>
+
+          {/* Judge Results */}
+          {(judgeLoading || judgeError || judgeResult) && (
+            <div className="border-t border-border bg-muted/20 px-4 py-3 text-sm">
+              {judgeLoading && (
+                <div className="text-muted-foreground">Running tests...</div>
+              )}
+              {judgeError && (
+                <div className="text-red-500">{judgeError}</div>
+              )}
+              {judgeResult && (
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className={`font-medium ${JUDGE_STATUS_STYLES[judgeResult.status] || 'text-foreground'}`}>
+                      {judgeResult.status.replace('_', ' ').toUpperCase()}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {judgeResult.summary.passed}/{judgeResult.summary.total} passed
+                      {judgeResult.summary.slow > 0 ? ` • ${judgeResult.summary.slow} slow` : ''}
+                      {judgeResult.summary.failed > 0 ? ` • ${judgeResult.summary.failed} failed` : ''}
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-3 max-h-48 overflow-auto">
+                    {judgeResult.results.map((result, index) => (
+                      <div key={result.id} className="border border-border rounded-lg p-3 bg-background/40">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={`font-semibold ${JUDGE_STATUS_STYLES[result.status] || 'text-foreground'}`}>
+                            {result.is_hidden ? 'Hidden case' : 'Case'} {index + 1}: {result.status.toUpperCase()}
+                          </span>
+                          <span className="text-muted-foreground">{result.time_ms} ms</span>
+                        </div>
+                        {result.reason && (
+                          <div className="text-xs text-muted-foreground mt-1">Reason: {result.reason}</div>
+                        )}
+                        {result.input_text !== undefined && result.input_text !== null && (
+                          <div className="mt-2">
+                            <div className="text-xs text-muted-foreground">Input</div>
+                            <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/60 p-2 text-xs text-foreground">
+                              {result.input_text}
+                            </pre>
+                          </div>
+                        )}
+                        {result.expected_output !== undefined && result.expected_output !== null && (
+                          <div className="mt-2">
+                            <div className="text-xs text-muted-foreground">Expected</div>
+                            <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/60 p-2 text-xs text-foreground">
+                              {result.expected_output}
+                            </pre>
+                          </div>
+                        )}
+                        {result.actual_output !== undefined && result.actual_output !== null && (
+                          <div className="mt-2">
+                            <div className="text-xs text-muted-foreground">Actual</div>
+                            <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/60 p-2 text-xs text-foreground">
+                              {result.actual_output}
+                            </pre>
+                          </div>
+                        )}
+                        {result.stderr && (
+                          <div className="mt-2">
+                            <div className="text-xs text-muted-foreground">stderr</div>
+                            <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/60 p-2 text-xs text-foreground">
+                              {result.stderr}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Bottom Actions */}
           <div className="flex-shrink-0 border-t border-border px-4 py-3 bg-muted/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Language: {language}</span>
+                <span>Python</span>
                 <span>•</span>
                 <span>{code.split('\n').length} lines</span>
               </div>
               <div className="flex gap-2">
+                {isAuthenticated ? (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={judgeLoading}
+                      onClick={() => handleJudge('run')}
+                    >
+                      {judgeLoading && judgeMode === 'run' ? 'Running...' : 'Run'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={judgeLoading}
+                      onClick={() => handleJudge('submit')}
+                    >
+                      {judgeLoading && judgeMode === 'submit' ? 'Submitting...' : 'Submit'}
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => login('github', `/practice?problem=${slug}`)} size="sm">
+                    Sign in to Run
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCode(LANGUAGE_TEMPLATES[language])}
+                  onClick={handleReset}
                 >
                   Reset
                 </Button>

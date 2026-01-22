@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 242,
+    "problem_id": "lc-valid-anagram",
+    "title": "Valid Anagram",
+    "slug": "valid-anagram",
+    "solution_code": "from collections import Counter\n\nclass Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        if len(s) != len(t):\n            return False\n        return Counter(s) == Counter(t)",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 49,
+    "problem_id": "lc-group-anagrams",
+    "title": "Group Anagrams",
+    "slug": "group-anagrams",
+    "solution_code": "from typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def groupAnagrams(self, strs: List[str]) -> List[List[str]]:\n        groups = defaultdict(list)\n        for s in strs:\n            counts = [0] * 26\n            for c in s:\n                counts[ord(c) - 97] += 1\n            groups[tuple(counts)].append(s)\n        return list(groups.values())",
+    "optimal_time_complexity": "O(n * k)",
+    "optimal_space_complexity": "O(n * k)"
+  },
+  {
+    "problem_number": 347,
+    "problem_id": "lc-top-k-frequent-elements",
+    "title": "Top K Frequent Elements",
+    "slug": "top-k-frequent-elements",
+    "solution_code": "from typing import List\nfrom collections import Counter\n\nclass Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        counts = Counter(nums)\n        buckets = [[] for _ in range(len(nums) + 1)]\n        for num, freq in counts.items():\n            buckets[freq].append(num)\n        result = []\n        for freq in range(len(buckets) - 1, 0, -1):\n            for num in buckets[freq]:\n                result.append(num)\n                if len(result) == k:\n                    return result\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 271,
+    "problem_id": "lc-encode-and-decode-strings",
+    "title": "Encode and Decode Strings",
+    "slug": "encode-and-decode-strings",
+    "solution_code": "from typing import List\n\nclass Codec:\n    def encode(self, strs: List[str]) -> str:\n        return ''.join(f\"{len(s)}#{s}\" for s in strs)\n\n    def decode(self, s: str) -> List[str]:\n        result = []\n        i = 0\n        while i < len(s):\n            j = i\n            while s[j] != '#':\n                j += 1\n            length = int(s[i:j])\n            j += 1\n            result.append(s[j:j + length])\n            i = j + length\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 128,
+    "problem_id": "lc-longest-consecutive-sequence",
+    "title": "Longest Consecutive Sequence",
+    "slug": "longest-consecutive-sequence",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        num_set = set(nums)\n        best = 0\n        for num in num_set:\n            if num - 1 not in num_set:\n                length = 1\n                while num + length in num_set:\n                    length += 1\n                best = max(best, length)\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 146,
+    "problem_id": "lc-lru-cache",
+    "title": "LRU Cache",
+    "slug": "lru-cache",
+    "solution_code": "from collections import OrderedDict\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.cache = OrderedDict()\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.cache.move_to_end(key)\n        return self.cache[key]\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self.cache.move_to_end(key)\n        self.cache[key] = value\n        if len(self.cache) > self.capacity:\n            self.cache.popitem(last=False)",
+    "optimal_time_complexity": "O(1)",
+    "optimal_space_complexity": "O(capacity)"
+  },
+  {
+    "problem_number": 380,
+    "problem_id": "lc-insert-delete-getrandom-o1",
+    "title": "Insert Delete GetRandom O(1)",
+    "slug": "insert-delete-getrandom-o1",
+    "solution_code": "import random\n\nclass RandomizedSet:\n    def __init__(self):\n        self.values = []\n        self.index = {}\n\n    def insert(self, val: int) -> bool:\n        if val in self.index:\n            return False\n        self.index[val] = len(self.values)\n        self.values.append(val)\n        return True\n\n    def remove(self, val: int) -> bool:\n        if val not in self.index:\n            return False\n        idx = self.index[val]\n        last = self.values[-1]\n        self.values[idx] = last\n        self.index[last] = idx\n        self.values.pop()\n        del self.index[val]\n        return True\n\n    def getRandom(self) -> int:\n        return random.choice(self.values)",
+    "optimal_time_complexity": "O(1)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 560,
+    "problem_id": "lc-subarray-sum-equals-k",
+    "title": "Subarray Sum Equals K",
+    "slug": "subarray-sum-equals-k",
+    "solution_code": "from typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def subarraySum(self, nums: List[int], k: int) -> int:\n        prefix = 0\n        count = 0\n        freq = defaultdict(int)\n        freq[0] = 1\n        for num in nums:\n            prefix += num\n            count += freq[prefix - k]\n            freq[prefix] += 1\n        return count",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 206,
+    "problem_id": "lc-reverse-linked-list",
+    "title": "Reverse Linked List",
+    "slug": "reverse-linked-list",
+    "solution_code": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        prev = None\n        curr = head\n        while curr:\n            nxt = curr.next\n            curr.next = prev\n            prev = curr\n            curr = nxt\n        return prev",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 21,
+    "problem_id": "lc-merge-two-sorted-lists",
+    "title": "Merge Two Sorted Lists",
+    "slug": "merge-two-sorted-lists",
+    "solution_code": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def mergeTwoLists(self, list1: Optional[ListNode], list2: Optional[ListNode]) -> Optional[ListNode]:\n        dummy = ListNode(0)\n        tail = dummy\n        while list1 and list2:\n            if list1.val <= list2.val:\n                tail.next = list1\n                list1 = list1.next\n            else:\n                tail.next = list2\n                list2 = list2.next\n            tail = tail.next\n        tail.next = list1 or list2\n        return dummy.next",
+    "optimal_time_complexity": "O(n + m)",
+    "optimal_space_complexity": "O(1)"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 212,
+    "problem_id": "lc-word-search-ii",
+    "title": "Word Search II",
+    "slug": "word-search-ii",
+    "solution_code": "from typing import List\n\nclass TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.word = None\n\nclass Solution:\n    def findWords(self, board: List[List[str]], words: List[str]) -> List[str]:\n        root = TrieNode()\n        for word in words:\n            node = root\n            for ch in word:\n                node = node.children.setdefault(ch, TrieNode())\n            node.word = word\n\n        rows, cols = len(board), len(board[0])\n        result = []\n\n        def dfs(r, c, node):\n            ch = board[r][c]\n            if ch not in node.children:\n                return\n            nxt = node.children[ch]\n            if nxt.word:\n                result.append(nxt.word)\n                nxt.word = None\n\n            board[r][c] = '#'\n            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != '#':\n                    dfs(nr, nc, nxt)\n            board[r][c] = ch\n\n            if not nxt.children:\n                node.children.pop(ch, None)\n\n        for r in range(rows):\n            for c in range(cols):\n                dfs(r, c, root)\n\n        return result",
+    "optimal_time_complexity": "O(m * n * 4^L)",
+    "optimal_space_complexity": "O(n * L)"
+  },
+  {
+    "problem_number": 14,
+    "problem_id": "lc-longest-common-prefix",
+    "title": "Longest Common Prefix",
+    "slug": "longest-common-prefix",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def longestCommonPrefix(self, strs: List[str]) -> str:\n        if not strs:\n            return ''\n        prefix = strs[0]\n        for s in strs[1:]:\n            while not s.startswith(prefix):\n                prefix = prefix[:-1]\n                if not prefix:\n                    return ''\n        return prefix",
+    "optimal_time_complexity": "O(n * m)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 704,
+    "problem_id": "lc-binary-search",
+    "title": "Binary Search",
+    "slug": "binary-search",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        left, right = 0, len(nums) - 1\n        while left <= right:\n            mid = (left + right) // 2\n            if nums[mid] == target:\n                return mid\n            if nums[mid] < target:\n                left = mid + 1\n            else:\n                right = mid - 1\n        return -1",
+    "optimal_time_complexity": "O(log n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 74,
+    "problem_id": "lc-search-a-2d-matrix",
+    "title": "Search a 2D Matrix",
+    "slug": "search-a-2d-matrix",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def searchMatrix(self, matrix: List[List[int]], target: int) -> bool:\n        if not matrix or not matrix[0]:\n            return False\n        m, n = len(matrix), len(matrix[0])\n        left, right = 0, m * n - 1\n        while left <= right:\n            mid = (left + right) // 2\n            r, c = divmod(mid, n)\n            val = matrix[r][c]\n            if val == target:\n                return True\n            if val < target:\n                left = mid + 1\n            else:\n                right = mid - 1\n        return False",
+    "optimal_time_complexity": "O(log(mn))",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 875,
+    "problem_id": "lc-koko-eating-bananas",
+    "title": "Koko Eating Bananas",
+    "slug": "koko-eating-bananas",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def minEatingSpeed(self, piles: List[int], h: int) -> int:\n        left, right = 1, max(piles)\n        while left < right:\n            mid = (left + right) // 2\n            hours = 0\n            for p in piles:\n                hours += (p + mid - 1) // mid\n            if hours <= h:\n                right = mid\n            else:\n                left = mid + 1\n        return left",
+    "optimal_time_complexity": "O(n log max)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 4,
+    "problem_id": "lc-median-of-two-sorted-arrays",
+    "title": "Median of Two Sorted Arrays",
+    "slug": "median-of-two-sorted-arrays",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def findMedianSortedArrays(self, nums1: List[int], nums2: List[int]) -> float:\n        if len(nums1) > len(nums2):\n            nums1, nums2 = nums2, nums1\n        m, n = len(nums1), len(nums2)\n        total_left = (m + n + 1) // 2\n        left, right = 0, m\n        while left <= right:\n            i = (left + right) // 2\n            j = total_left - i\n            nums1_left = nums1[i - 1] if i > 0 else float('-inf')\n            nums1_right = nums1[i] if i < m else float('inf')\n            nums2_left = nums2[j - 1] if j > 0 else float('-inf')\n            nums2_right = nums2[j] if j < n else float('inf')\n\n            if nums1_left <= nums2_right and nums2_left <= nums1_right:\n                if (m + n) % 2 == 1:\n                    return float(max(nums1_left, nums2_left))\n                return (max(nums1_left, nums2_left) + min(nums1_right, nums2_right)) / 2.0\n            if nums1_left > nums2_right:\n                right = i - 1\n            else:\n                left = i + 1\n        return 0.0",
+    "optimal_time_complexity": "O(log(min(m, n)))",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 20,
+    "problem_id": "lc-valid-parentheses",
+    "title": "Valid Parentheses",
+    "slug": "valid-parentheses",
+    "solution_code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {')': '(', ']': '[', '}': '{'}\n        stack = []\n        for ch in s:\n            if ch in pairs:\n                if not stack or stack.pop() != pairs[ch]:\n                    return False\n            else:\n                stack.append(ch)\n        return not stack",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 155,
+    "problem_id": "lc-min-stack",
+    "title": "Min Stack",
+    "slug": "min-stack",
+    "solution_code": "class MinStack:\n    def __init__(self):\n        self.stack = []\n        self.min_stack = []\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        if not self.min_stack or val <= self.min_stack[-1]:\n            self.min_stack.append(val)\n\n    def pop(self) -> None:\n        val = self.stack.pop()\n        if val == self.min_stack[-1]:\n            self.min_stack.pop()\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return self.min_stack[-1]",
+    "optimal_time_complexity": "O(1)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 150,
+    "problem_id": "lc-evaluate-reverse-polish-notation",
+    "title": "Evaluate Reverse Polish Notation",
+    "slug": "evaluate-reverse-polish-notation",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def evalRPN(self, tokens: List[str]) -> int:\n        stack = []\n        for token in tokens:\n            if token in {\"+\", \"-\", \"*\", \"/\"}:\n                b = stack.pop()\n                a = stack.pop()\n                if token == \"+\":\n                    stack.append(a + b)\n                elif token == \"-\":\n                    stack.append(a - b)\n                elif token == \"*\":\n                    stack.append(a * b)\n                else:\n                    stack.append(int(a / b))\n            else:\n                stack.append(int(token))\n        return stack[-1]",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 739,
+    "problem_id": "lc-daily-temperatures",
+    "title": "Daily Temperatures",
+    "slug": "daily-temperatures",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:\n        result = [0] * len(temperatures)\n        stack = []\n        for i, temp in enumerate(temperatures):\n            while stack and temperatures[stack[-1]] < temp:\n                idx = stack.pop()\n                result[idx] = i - idx\n            stack.append(i)\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  }
+]

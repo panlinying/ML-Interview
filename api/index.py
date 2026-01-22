@@ -6,6 +6,7 @@ Deployed as Vercel serverless functions.
 import os
 import re
 import html
+import json
 import time
 import uuid
 from datetime import datetime, timedelta
@@ -19,7 +20,7 @@ import httpx
 from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload
 
-from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, ProblemProgress, ProblemDetail, init_db
+from .db import get_db, get_session, Progress, Comment, CommentVote, PageView, User, RateLimit, ProblemProgress, ProblemDetail, ProblemTestCase, ProblemReference, init_db
 from .auth import router as auth_router, get_current_user_required, get_current_user_optional, verify_admin_secret
 from .logging_config import setup_logging, get_logger
 
@@ -96,6 +97,7 @@ RATE_LIMITS = {
     "comments": (10, 60),      # 10 comments per 60 seconds
     "auth": (5, 60),           # 5 auth attempts per 60 seconds
     "leetcode": (20, 60),      # 20 fetches per 60 seconds
+    "judge": (30, 60),         # 30 judge requests per 60 seconds
 }
 
 
@@ -188,6 +190,22 @@ def validate_leetcode_slug(slug: str) -> str:
     return normalized
 
 
+def validate_problem_id_value(problem_id: str) -> str:
+    """Validate a problem ID."""
+    normalized = problem_id.strip()
+    if not normalized or len(normalized) > 100:
+        raise HTTPException(status_code=400, detail="Invalid problem ID")
+    if not re.match(r'^[\w-]+$', normalized):
+        raise HTTPException(status_code=400, detail="Invalid problem ID")
+    return normalized
+
+
+def truncate_text(value: str, max_length: int = 20000) -> str:
+    if value is None:
+        return ""
+    return value[:max_length]
+
+
 LEETCODE_ALLOWED_TAGS = {
     "a", "b", "blockquote", "br", "code", "div", "em", "h1", "h2", "h3", "h4",
     "h5", "h6", "hr", "i", "img", "li", "ol", "p", "pre", "strong", "sub",
@@ -264,6 +282,345 @@ def sanitize_leetcode_html(raw_html: str, max_length: int = 200000) -> str:
     parser.feed(trimmed)
     parser.close()
     return "".join(parser.parts)
+
+
+def normalize_output(value: str) -> str:
+    if value is None:
+        return ""
+    normalized = value.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.rstrip() for line in normalized.split("\n")]
+    while lines and lines[-1] == "":
+        lines.pop()
+    return "\n".join(lines)
+
+
+def compare_outputs(actual: str, expected: str) -> bool:
+    actual_norm = normalize_output(actual)
+    expected_norm = normalize_output(expected)
+    if actual_norm == expected_norm:
+        return True
+    try:
+        actual_json = json.loads(actual_norm)
+        expected_json = json.loads(expected_norm)
+        return actual_json == expected_json
+    except Exception:
+        return False
+
+
+def parse_time_ms(raw_time) -> int:
+    if raw_time is None:
+        return 0
+    try:
+        return int(round(float(raw_time) * 1000))
+    except (TypeError, ValueError):
+        return 0
+
+
+PYTHON_WRAPPER_PRELUDE = """
+import json
+import sys
+import ast
+import inspect
+import typing
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class Node:
+    def __init__(self, val=0, neighbors=None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+""".strip()
+
+PYTHON_WRAPPER_POSTLUDE = """
+def _lc_parse_input(text):
+    text = text.strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except Exception:
+        try:
+            return ast.literal_eval(text)
+        except Exception:
+            return text
+
+
+def _lc_is_list_of_str(values):
+    return isinstance(values, list) and all(isinstance(v, str) for v in values)
+
+
+def _lc_is_design_input(data):
+    if isinstance(data, dict):
+        return "operations" in data or "ops" in data
+    return (
+        isinstance(data, (list, tuple))
+        and len(data) == 2
+        and _lc_is_list_of_str(data[0])
+        and isinstance(data[1], list)
+    )
+
+
+def _lc_get_class(name):
+    obj = globals().get(name)
+    if isinstance(obj, type):
+        return obj
+    return None
+
+
+def _lc_get_solution_callable(method_name=None):
+    if "Solution" in globals():
+        inst = globals()["Solution"]()
+        if method_name and hasattr(inst, method_name):
+            return getattr(inst, method_name)
+        methods = [m for m in dir(inst) if callable(getattr(inst, m)) and not m.startswith("_")]
+        if len(methods) == 1:
+            return getattr(inst, methods[0])
+
+    funcs = []
+    for name, val in globals().items():
+        if callable(val) and not name.startswith("_") and not isinstance(val, type):
+            if name in {"json", "sys", "ast", "inspect", "typing"}:
+                continue
+            funcs.append(name)
+
+    if method_name and method_name in globals():
+        val = globals()[method_name]
+        if callable(val):
+            return val
+
+    if len(funcs) == 1:
+        return globals()[funcs[0]]
+
+    raise RuntimeError("Could not resolve function to run")
+
+
+def _lc_annotation_matches(ann, name):
+    if ann is None:
+        return False
+    if ann is globals().get(name):
+        return True
+    if ann == name:
+        return True
+    if isinstance(ann, str):
+        return ann == name or ann.endswith(f".{name}")
+    origin = typing.get_origin(ann)
+    if origin is typing.Union:
+        return any(_lc_annotation_matches(a, name) for a in typing.get_args(ann) if a is not type(None))
+    return False
+
+
+def _lc_list_to_listnode(values):
+    if values is None:
+        return None
+    if isinstance(values, ListNode):
+        return values
+    dummy = ListNode(0)
+    current = dummy
+    for value in values:
+        current.next = ListNode(value)
+        current = current.next
+    return dummy.next
+
+
+def _lc_listnode_to_list(node):
+    values = []
+    current = node
+    while current is not None:
+        values.append(current.val)
+        current = current.next
+    return values
+
+
+def _lc_list_to_treenode(values):
+    if values is None:
+        return None
+    if isinstance(values, TreeNode):
+        return values
+    if not values:
+        return None
+    nodes = [TreeNode(values[0]) if values[0] is not None else None]
+    idx = 1
+    for node in nodes:
+        if node is None:
+            continue
+        if idx < len(values):
+            val = values[idx]
+            node.left = TreeNode(val) if val is not None else None
+            nodes.append(node.left)
+            idx += 1
+        if idx < len(values):
+            val = values[idx]
+            node.right = TreeNode(val) if val is not None else None
+            nodes.append(node.right)
+            idx += 1
+    return nodes[0]
+
+
+def _lc_treenode_to_list(root):
+    if root is None:
+        return []
+    result = []
+    queue = [root]
+    while queue:
+        node = queue.pop(0)
+        if node is None:
+            result.append(None)
+            continue
+        result.append(node.val)
+        queue.append(node.left)
+        queue.append(node.right)
+    while result and result[-1] is None:
+        result.pop()
+    return result
+
+
+def _lc_convert_arg(value, ann):
+    if _lc_annotation_matches(ann, "ListNode"):
+        return _lc_list_to_listnode(value)
+    if _lc_annotation_matches(ann, "TreeNode"):
+        return _lc_list_to_treenode(value)
+    return value
+
+
+def _lc_prepare_args(func, args):
+    try:
+        sig = inspect.signature(func)
+    except (TypeError, ValueError):
+        return args
+    params = [p for p in sig.parameters.values() if p.name != "self"]
+    converted = []
+    for idx, arg in enumerate(args):
+        ann = params[idx].annotation if idx < len(params) else None
+        converted.append(_lc_convert_arg(arg, ann))
+    return converted
+
+
+def _lc_serialize(value):
+    if isinstance(value, ListNode):
+        return _lc_listnode_to_list(value)
+    if isinstance(value, TreeNode):
+        return _lc_treenode_to_list(value)
+    if isinstance(value, list):
+        return [_lc_serialize(v) for v in value]
+    if isinstance(value, tuple):
+        return [_lc_serialize(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _lc_serialize(v) for k, v in value.items()}
+    return value
+
+
+def _lc_normalize_args(value):
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
+
+
+def _lc_run_design(operations, arguments):
+    class_name = operations[0]
+    cls = _lc_get_class(class_name)
+    if cls is None:
+        raise RuntimeError(f"Class {class_name} not found")
+    init_args = _lc_normalize_args(arguments[0] if arguments else [])
+    obj = cls(*_lc_prepare_args(cls.__init__, init_args))
+    outputs = [None]
+    for op, arg in zip(operations[1:], arguments[1:]):
+        method = getattr(obj, op)
+        call_args = _lc_prepare_args(method, _lc_normalize_args(arg))
+        outputs.append(method(*call_args))
+    print(json.dumps(_lc_serialize(outputs), separators=(",", ":"), ensure_ascii=False))
+
+
+def _lc_run_single(method_name, args):
+    func = _lc_get_solution_callable(method_name)
+    call_args = _lc_prepare_args(func, args)
+    result = func(*call_args)
+    print(json.dumps(_lc_serialize(result), separators=(",", ":"), ensure_ascii=False))
+
+
+def _lc_main():
+    data = sys.stdin.read()
+    parsed = _lc_parse_input(data)
+
+    if _lc_is_design_input(parsed):
+        if isinstance(parsed, dict):
+            operations = parsed.get("operations") or parsed.get("ops") or []
+            arguments = parsed.get("arguments") or parsed.get("args") or []
+        else:
+            operations, arguments = parsed
+        _lc_run_design(operations, arguments)
+        return
+
+    method_name = None
+    args = []
+    if isinstance(parsed, dict) and "args" in parsed:
+        args = parsed.get("args") or []
+        method_name = parsed.get("method")
+    elif isinstance(parsed, dict) and parsed is not None:
+        args = [parsed]
+    elif isinstance(parsed, (list, tuple)):
+        args = list(parsed)
+    elif parsed is None:
+        args = []
+    else:
+        args = [parsed]
+
+    _lc_run_single(method_name, args)
+
+
+if __name__ == "__main__":
+    _lc_main()
+""".strip()
+
+
+def build_python_wrapper(user_code: str) -> str:
+    return "\n".join([PYTHON_WRAPPER_PRELUDE, user_code, PYTHON_WRAPPER_POSTLUDE])
+
+
+def piston_execute(code: str, stdin: str, language: str) -> dict:
+    payload = {
+        "language": language,
+        "files": [{"content": code}],
+        "stdin": stdin,
+    }
+    if PISTON_VERSION:
+        payload["version"] = PISTON_VERSION
+
+    try:
+        response = httpx.post(
+            f"{PISTON_API_URL}/execute",
+            json=payload,
+            timeout=PISTON_TIMEOUT_SECONDS,
+        )
+    except httpx.HTTPError:
+        logger.warning("Piston execution failed", exc_info=True)
+        raise HTTPException(status_code=502, detail="Runner unavailable.")
+
+    if response.status_code != 200:
+        logger.warning("Piston returned non-200", extra={"status_code": response.status_code})
+        raise HTTPException(status_code=502, detail="Runner error.")
+
+    try:
+        return response.json()
+    except ValueError:
+        raise HTTPException(status_code=502, detail="Runner response invalid.")
+
+
+def run_python_with_wrapper(code: str, stdin: str) -> dict:
+    wrapped = build_python_wrapper(code)
+    return piston_execute(wrapped, stdin, PISTON_LANGUAGE)
 
 
 # --- Pydantic Models with Validation ---
@@ -942,6 +1299,14 @@ query questionData($titleSlug: String!) {
 }
 """
 
+PISTON_API_URL = os.environ.get("PISTON_API_URL", "https://emkc.org/api/v2/piston").rstrip("/")
+PISTON_LANGUAGE = os.environ.get("PISTON_PYTHON_LANGUAGE", "python")
+PISTON_VERSION = os.environ.get("PISTON_PYTHON_VERSION", "3.10.0")
+PISTON_TIMEOUT_SECONDS = float(os.environ.get("PISTON_TIMEOUT_SECONDS", "10"))
+
+DEFAULT_TIME_LIMIT_MS = int(os.environ.get("JUDGE_TIME_LIMIT_MS", "2000"))
+DEFAULT_SLOW_LIMIT_MS = int(os.environ.get("JUDGE_SLOW_LIMIT_MS", "4000"))
+
 
 def fetch_leetcode_problem(slug: str) -> dict:
     payload = {"query": LEETCODE_QUESTION_QUERY, "variables": {"titleSlug": slug}}
@@ -1048,6 +1413,654 @@ def get_problem_detail(
     return ProblemDetailResponse.model_validate(record)
 
 
+# --- Problem Test Cases & Judge ---
+
+class ProblemTestCaseCreate(BaseModel):
+    input_text: str
+    expected_output: str
+    is_hidden: bool = False
+    time_limit_ms: Optional[int] = None
+    slow_limit_ms: Optional[int] = None
+
+    @field_validator('input_text')
+    @classmethod
+    def validate_input(cls, v):
+        if v is None:
+            raise ValueError("Input is required")
+        return truncate_text(v, max_length=20000)
+
+    @field_validator('expected_output')
+    @classmethod
+    def validate_expected(cls, v):
+        if v is None:
+            raise ValueError("Expected output is required")
+        return truncate_text(v, max_length=20000)
+
+    @field_validator('time_limit_ms')
+    @classmethod
+    def validate_time_limit(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("time_limit_ms must be positive")
+        return v
+
+    @field_validator('slow_limit_ms')
+    @classmethod
+    def validate_slow_limit(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("slow_limit_ms must be positive")
+        return v
+
+
+class ProblemTestCaseUpdate(BaseModel):
+    input_text: Optional[str] = None
+    expected_output: Optional[str] = None
+    is_hidden: Optional[bool] = None
+    time_limit_ms: Optional[int] = None
+    slow_limit_ms: Optional[int] = None
+
+    @field_validator('input_text')
+    @classmethod
+    def validate_input(cls, v):
+        if v is None:
+            return v
+        return truncate_text(v, max_length=20000)
+
+    @field_validator('expected_output')
+    @classmethod
+    def validate_expected(cls, v):
+        if v is None:
+            return v
+        return truncate_text(v, max_length=20000)
+
+    @field_validator('time_limit_ms')
+    @classmethod
+    def validate_time_limit(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("time_limit_ms must be positive")
+        return v
+
+    @field_validator('slow_limit_ms')
+    @classmethod
+    def validate_slow_limit(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("slow_limit_ms must be positive")
+        return v
+
+
+class ProblemTestCaseBulkCreate(BaseModel):
+    cases: List[ProblemTestCaseCreate]
+
+    @field_validator('cases')
+    @classmethod
+    def validate_cases(cls, v):
+        if not v:
+            raise ValueError("At least one test case is required")
+        return v
+
+
+class ProblemTestCaseResponse(BaseModel):
+    id: int
+    problem_id: str
+    input_text: str
+    expected_output: str
+    is_hidden: bool
+    time_limit_ms: int
+    slow_limit_ms: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class ProblemSubmissionRequest(BaseModel):
+    code: str
+    language: str = "python"
+
+    @field_validator('code')
+    @classmethod
+    def validate_code(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Code is required")
+        return truncate_text(v, max_length=30000)
+
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v):
+        if v != "python":
+            raise ValueError("Only python is supported")
+        return v
+
+
+class JudgeCaseResult(BaseModel):
+    id: int
+    status: str
+    time_ms: int
+    reason: Optional[str] = None
+    input_text: Optional[str] = None
+    expected_output: Optional[str] = None
+    actual_output: Optional[str] = None
+    stderr: Optional[str] = None
+    is_hidden: bool
+
+
+class JudgeSummary(BaseModel):
+    total: int
+    passed: int
+    slow: int
+    failed: int
+
+
+class ProblemJudgeResponse(BaseModel):
+    status: str
+    summary: JudgeSummary
+    results: List[JudgeCaseResult]
+
+
+@app.post("/api/problems/{problem_id}/tests", response_model=List[ProblemTestCaseResponse])
+def create_problem_tests(
+    problem_id: str,
+    data: ProblemTestCaseBulkCreate,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Create test cases for a problem (admin only)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+
+    created: List[ProblemTestCase] = []
+    for case in data.cases:
+        time_limit = case.time_limit_ms or DEFAULT_TIME_LIMIT_MS
+        slow_limit = case.slow_limit_ms or max(time_limit, DEFAULT_SLOW_LIMIT_MS)
+        if slow_limit < time_limit:
+            slow_limit = time_limit
+        record = ProblemTestCase(
+            problem_id=normalized,
+            input_text=case.input_text,
+            expected_output=case.expected_output,
+            is_hidden=case.is_hidden,
+            time_limit_ms=time_limit,
+            slow_limit_ms=slow_limit,
+        )
+        db.add(record)
+        created.append(record)
+
+    db.commit()
+    for record in created:
+        db.refresh(record)
+
+    return [ProblemTestCaseResponse.model_validate(record) for record in created]
+
+
+@app.get("/api/problems/{problem_id}/tests", response_model=List[ProblemTestCaseResponse])
+def list_problem_tests(
+    problem_id: str,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """List test cases for a problem (admin only)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+    tests = db.query(ProblemTestCase).filter(ProblemTestCase.problem_id == normalized).order_by(ProblemTestCase.id.asc()).all()
+    return [ProblemTestCaseResponse.model_validate(test_case) for test_case in tests]
+
+
+@app.patch("/api/problems/{problem_id}/tests/{test_id}", response_model=ProblemTestCaseResponse)
+def update_problem_test(
+    problem_id: str,
+    test_id: int,
+    data: ProblemTestCaseUpdate,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Update a test case (admin only)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+    test_case = db.query(ProblemTestCase).filter(
+        ProblemTestCase.id == test_id,
+        ProblemTestCase.problem_id == normalized,
+    ).first()
+    if not test_case:
+        raise HTTPException(status_code=404, detail="Test case not found")
+
+    if data.input_text is not None:
+        test_case.input_text = data.input_text
+    if data.expected_output is not None:
+        test_case.expected_output = data.expected_output
+    if data.is_hidden is not None:
+        test_case.is_hidden = data.is_hidden
+
+    time_limit = test_case.time_limit_ms
+    slow_limit = test_case.slow_limit_ms
+    if data.time_limit_ms is not None:
+        time_limit = data.time_limit_ms
+    if data.slow_limit_ms is not None:
+        slow_limit = data.slow_limit_ms
+
+    if slow_limit < time_limit:
+        slow_limit = time_limit
+
+    test_case.time_limit_ms = time_limit
+    test_case.slow_limit_ms = slow_limit
+
+    db.commit()
+    db.refresh(test_case)
+    return ProblemTestCaseResponse.model_validate(test_case)
+
+
+@app.delete("/api/problems/{problem_id}/tests/{test_id}")
+def delete_problem_test(
+    problem_id: str,
+    test_id: int,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Delete a test case (admin only)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+    test_case = db.query(ProblemTestCase).filter(
+        ProblemTestCase.id == test_id,
+        ProblemTestCase.problem_id == normalized,
+    ).first()
+    if not test_case:
+        raise HTTPException(status_code=404, detail="Test case not found")
+
+    db.delete(test_case)
+    db.commit()
+    return {"status": "ok", "deleted": test_id}
+
+
+def evaluate_tests(
+    test_cases: List[ProblemTestCase],
+    code: str,
+    language: str,
+    include_public_details: bool,
+) -> ProblemJudgeResponse:
+    results: List[JudgeCaseResult] = []
+
+    for test_case in test_cases:
+        time_limit = test_case.time_limit_ms or DEFAULT_TIME_LIMIT_MS
+        slow_limit = test_case.slow_limit_ms or max(time_limit, DEFAULT_SLOW_LIMIT_MS)
+        if slow_limit < time_limit:
+            slow_limit = time_limit
+
+        piston_response = run_python_with_wrapper(code, test_case.input_text)
+        run_result = piston_response.get("run") or {}
+        compile_result = piston_response.get("compile") or {}
+
+        stderr = compile_result.get("stderr") or compile_result.get("output") or ""
+        if compile_result and compile_result.get("code", 0) != 0:
+            status = "fail"
+            reason = "compile_error"
+            time_ms = parse_time_ms(compile_result.get("time"))
+            actual_output = ""
+        else:
+            stderr = run_result.get("stderr") or ""
+            stdout = run_result.get("stdout") or ""
+            exit_code = run_result.get("code", 0)
+            signal = run_result.get("signal")
+            time_ms = parse_time_ms(run_result.get("time"))
+            actual_output = normalize_output(stdout)
+            expected_output = normalize_output(test_case.expected_output)
+
+            if signal or exit_code != 0:
+                status = "fail"
+                reason = "runtime_error"
+            elif not compare_outputs(actual_output, expected_output):
+                status = "fail"
+                reason = "wrong_answer"
+            elif time_ms > slow_limit:
+                status = "fail"
+                reason = "time_limit_exceeded"
+            elif time_ms > time_limit:
+                status = "slow"
+                reason = "time_warning"
+            else:
+                status = "pass"
+                reason = None
+
+        show_details = include_public_details and not test_case.is_hidden
+        results.append(
+            JudgeCaseResult(
+                id=test_case.id,
+                status=status,
+                time_ms=time_ms,
+                reason=reason,
+                input_text=test_case.input_text if show_details else None,
+                expected_output=test_case.expected_output if show_details else None,
+                actual_output=actual_output if show_details else None,
+                stderr=stderr if show_details and stderr else None,
+                is_hidden=test_case.is_hidden,
+            )
+        )
+
+    total = len(results)
+    passed = sum(1 for r in results if r.status == "pass")
+    slow = sum(1 for r in results if r.status == "slow")
+    failed = total - passed - slow
+
+    if failed > 0:
+        status = "fail"
+    elif slow > 0:
+        status = "pass_slow"
+    else:
+        status = "pass"
+
+    summary = JudgeSummary(total=total, passed=passed, slow=slow, failed=failed)
+    return ProblemJudgeResponse(status=status, summary=summary, results=results)
+
+
+@app.post("/api/problems/{problem_id}/run", response_model=ProblemJudgeResponse)
+def run_problem(
+    problem_id: str,
+    data: ProblemSubmissionRequest,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Run public test cases for a problem (authenticated)."""
+    check_rate_limit(request, "judge", db)
+    normalized = validate_problem_id_value(problem_id)
+    tests = db.query(ProblemTestCase).filter(
+        ProblemTestCase.problem_id == normalized,
+        ProblemTestCase.is_hidden == False,
+    ).order_by(ProblemTestCase.id.asc()).all()
+
+    if not tests:
+        raise HTTPException(status_code=404, detail="No public test cases configured.")
+
+    response = evaluate_tests(tests, data.code, PISTON_LANGUAGE, include_public_details=True)
+    return response
+
+
+@app.post("/api/problems/{problem_id}/submit", response_model=ProblemJudgeResponse)
+def submit_problem(
+    problem_id: str,
+    data: ProblemSubmissionRequest,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """Run all test cases for a problem (authenticated)."""
+    check_rate_limit(request, "judge", db)
+    normalized = validate_problem_id_value(problem_id)
+    tests = db.query(ProblemTestCase).filter(
+        ProblemTestCase.problem_id == normalized,
+    ).order_by(ProblemTestCase.id.asc()).all()
+
+    if not tests:
+        raise HTTPException(status_code=404, detail="No test cases configured.")
+
+    response = evaluate_tests(tests, data.code, PISTON_LANGUAGE, include_public_details=True)
+    update_user_streak(user, db)
+    return response
+
+
+# --- Problem Reference Solutions ---
+
+class ProblemReferenceUpsert(BaseModel):
+    solution_code: str
+    optimal_time_complexity: Optional[str] = None
+    optimal_space_complexity: Optional[str] = None
+    language: str = "python"
+
+    @field_validator('solution_code')
+    @classmethod
+    def validate_solution(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Solution code is required")
+        return truncate_text(v, max_length=50000)
+
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v):
+        if v != "python":
+            raise ValueError("Only python is supported")
+        return v
+
+    @field_validator('optimal_time_complexity')
+    @classmethod
+    def validate_time_complexity(cls, v):
+        if v:
+            return truncate_text(v, max_length=50)
+        return v
+
+    @field_validator('optimal_space_complexity')
+    @classmethod
+    def validate_space_complexity(cls, v):
+        if v:
+            return truncate_text(v, max_length=50)
+        return v
+
+
+class ProblemReferenceResponse(BaseModel):
+    id: int
+    problem_id: str
+    language: str
+    solution_code: str
+    optimal_time_complexity: Optional[str]
+    optimal_space_complexity: Optional[str]
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class ProblemReferenceRunRequest(BaseModel):
+    input_text: str
+
+    @field_validator('input_text')
+    @classmethod
+    def validate_input(cls, v):
+        if v is None:
+            raise ValueError("Input is required")
+        return truncate_text(v, max_length=20000)
+
+
+class ProblemReferenceRunResponse(BaseModel):
+    output: str
+    time_ms: int
+    stderr: Optional[str] = None
+
+
+class ProblemComplexityResponse(BaseModel):
+    problem_id: str
+    optimal_time_complexity: Optional[str]
+    optimal_space_complexity: Optional[str]
+
+
+@app.get("/api/problems/{problem_id}/reference", response_model=ProblemReferenceResponse)
+def get_problem_reference(
+    problem_id: str,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Get reference solution (admin only)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Reference solution not found")
+    return ProblemReferenceResponse.model_validate(record)
+
+
+@app.put("/api/problems/{problem_id}/reference", response_model=ProblemReferenceResponse)
+def upsert_problem_reference(
+    problem_id: str,
+    data: ProblemReferenceUpsert,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Create or update a reference solution (admin only)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+
+    if record:
+        record.solution_code = data.solution_code
+        record.language = data.language
+        record.optimal_time_complexity = data.optimal_time_complexity
+        record.optimal_space_complexity = data.optimal_space_complexity
+        db.commit()
+        db.refresh(record)
+        return ProblemReferenceResponse.model_validate(record)
+
+    record = ProblemReference(
+        problem_id=normalized,
+        solution_code=data.solution_code,
+        language=data.language,
+        optimal_time_complexity=data.optimal_time_complexity,
+        optimal_space_complexity=data.optimal_space_complexity,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return ProblemReferenceResponse.model_validate(record)
+
+
+@app.post("/api/problems/{problem_id}/reference/run", response_model=ProblemReferenceRunResponse)
+def run_problem_reference(
+    problem_id: str,
+    data: ProblemReferenceRunRequest,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Run reference solution against provided input (admin only)."""
+    check_rate_limit(request, "judge", db)
+    normalized = validate_problem_id_value(problem_id)
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Reference solution not found")
+
+    piston_response = run_python_with_wrapper(record.solution_code, data.input_text)
+    run_result = piston_response.get("run") or {}
+    compile_result = piston_response.get("compile") or {}
+
+    if compile_result and compile_result.get("code", 0) != 0:
+        stderr = compile_result.get("stderr") or compile_result.get("output") or ""
+        raise HTTPException(status_code=400, detail=f"Reference compile error: {stderr}".strip())
+
+    stderr = run_result.get("stderr") or ""
+    exit_code = run_result.get("code", 0)
+    signal = run_result.get("signal")
+    if signal or exit_code != 0:
+        detail = stderr or "Reference runtime error"
+        raise HTTPException(status_code=400, detail=detail)
+
+    output = normalize_output(run_result.get("stdout") or "")
+    time_ms = parse_time_ms(run_result.get("time"))
+    return ProblemReferenceRunResponse(output=output, time_ms=time_ms, stderr=stderr or None)
+
+
+@app.get("/api/problems/{problem_id}/complexity", response_model=ProblemComplexityResponse)
+def get_problem_complexity(
+    problem_id: str,
+    request: Request,
+    db=Depends(get_db),
+):
+    """Get optimal complexity for a problem."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Problem complexity not found")
+    return ProblemComplexityResponse(
+        problem_id=record.problem_id,
+        optimal_time_complexity=record.optimal_time_complexity,
+        optimal_space_complexity=record.optimal_space_complexity,
+    )
+
+
+class ProblemSolutionResponse(BaseModel):
+    problem_id: str
+    solution_code: str
+    optimal_time_complexity: Optional[str]
+    optimal_space_complexity: Optional[str]
+    user_solved: bool
+
+
+@app.get("/api/problems/{problem_id}/solution", response_model=ProblemSolutionResponse)
+def get_problem_solution(
+    problem_id: str,
+    request: Request,
+    user: User = Depends(get_current_user_required),
+    db=Depends(get_db),
+):
+    """
+    Get reference solution for a problem.
+
+    Users can view solutions after they've attempted the problem (any status except not_started).
+    This encourages users to try first before viewing the solution.
+    """
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+
+    # Check if user has attempted this problem
+    progress = db.query(ProblemProgress).filter(
+        ProblemProgress.user_id == user.id,
+        ProblemProgress.problem_id == normalized,
+    ).first()
+
+    user_solved = progress is not None and progress.status == "solved"
+    user_attempted = progress is not None and progress.status != "not_started"
+
+    if not user_attempted:
+        raise HTTPException(
+            status_code=403,
+            detail="You must attempt the problem before viewing the solution. Submit at least one attempt first."
+        )
+
+    # Get reference solution
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Solution not found for this problem")
+
+    return ProblemSolutionResponse(
+        problem_id=record.problem_id,
+        solution_code=record.solution_code,
+        optimal_time_complexity=record.optimal_time_complexity,
+        optimal_space_complexity=record.optimal_space_complexity,
+        user_solved=user_solved,
+    )
+
+
+class ProblemStarterCodeResponse(BaseModel):
+    problem_id: str
+    starter_code: Optional[str]
+    optimal_time_complexity: Optional[str]
+    optimal_space_complexity: Optional[str]
+
+
+@app.get("/api/problems/{problem_id}/starter", response_model=ProblemStarterCodeResponse)
+def get_problem_starter_code(
+    problem_id: str,
+    request: Request,
+    db=Depends(get_db),
+):
+    """Get starter code template for a problem (public endpoint)."""
+    check_rate_limit(request, "default", db)
+    normalized = validate_problem_id_value(problem_id)
+
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Problem not found")
+
+    return ProblemStarterCodeResponse(
+        problem_id=record.problem_id,
+        starter_code=record.starter_code,
+        optimal_time_complexity=record.optimal_time_complexity,
+        optimal_space_complexity=record.optimal_space_complexity,
+    )
+
+
 # --- Problem Tracker ---
 
 class ProblemCreate(BaseModel):
@@ -1062,7 +2075,7 @@ class ProblemCreate(BaseModel):
     @field_validator('problem_id')
     @classmethod
     def validate_problem_id(cls, v):
-        if not v or len(v) > 50:
+        if not v or len(v) > 100:
             raise ValueError("Invalid problem ID")
         if not re.match(r'^[\w-]+$', v):
             raise ValueError("Problem ID must be alphanumeric with dashes")

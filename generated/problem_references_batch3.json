@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 141,
+    "problem_id": "lc-linked-list-cycle",
+    "title": "Linked List Cycle",
+    "slug": "linked-list-cycle",
+    "solution_code": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, x):\n        self.val = x\n        self.next = None\n\nclass Solution:\n    def hasCycle(self, head: Optional[ListNode]) -> bool:\n        slow = fast = head\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n            if slow is fast:\n                return True\n        return False",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 142,
+    "problem_id": "lc-linked-list-cycle-ii",
+    "title": "Linked List Cycle II",
+    "slug": "linked-list-cycle-ii",
+    "solution_code": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, x):\n        self.val = x\n        self.next = None\n\nclass Solution:\n    def detectCycle(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        slow = fast = head\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n            if slow is fast:\n                break\n        else:\n            return None\n\n        slow = head\n        while slow is not fast:\n            slow = slow.next\n            fast = fast.next\n        return slow",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 143,
+    "problem_id": "lc-reorder-list",
+    "title": "Reorder List",
+    "slug": "reorder-list",
+    "solution_code": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def reorderList(self, head: Optional[ListNode]) -> None:\n        if not head or not head.next:\n            return\n\n        slow = fast = head\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n\n        prev = None\n        curr = slow.next\n        slow.next = None\n        while curr:\n            nxt = curr.next\n            curr.next = prev\n            prev = curr\n            curr = nxt\n\n        first, second = head, prev\n        while second:\n            tmp1 = first.next\n            tmp2 = second.next\n            first.next = second\n            second.next = tmp1\n            first = tmp1\n            second = tmp2",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 19,
+    "problem_id": "lc-remove-nth-node-from-end-of-list",
+    "title": "Remove Nth Node From End",
+    "slug": "remove-nth-node-from-end-of-list",
+    "solution_code": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        dummy = ListNode(0, head)\n        fast = slow = dummy\n        for _ in range(n):\n            fast = fast.next\n        while fast and fast.next:\n            fast = fast.next\n            slow = slow.next\n        slow.next = slow.next.next\n        return dummy.next",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 23,
+    "problem_id": "lc-merge-k-sorted-lists",
+    "title": "Merge K Sorted Lists",
+    "slug": "merge-k-sorted-lists",
+    "solution_code": "from typing import List, Optional\nimport heapq\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        heap = []\n        for idx, node in enumerate(lists):\n            if node:\n                heapq.heappush(heap, (node.val, idx, node))\n        dummy = ListNode(0)\n        tail = dummy\n        while heap:\n            _, idx, node = heapq.heappop(heap)\n            tail.next = node\n            tail = tail.next\n            if node.next:\n                heapq.heappush(heap, (node.next.val, idx, node.next))\n        return dummy.next",
+    "optimal_time_complexity": "O(n log k)",
+    "optimal_space_complexity": "O(k)"
+  },
+  {
+    "problem_number": 226,
+    "problem_id": "lc-invert-binary-tree",
+    "title": "Invert Binary Tree",
+    "slug": "invert-binary-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:\n        if not root:\n            return None\n        root.left, root.right = root.right, root.left\n        self.invertTree(root.left)\n        self.invertTree(root.right)\n        return root",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 104,
+    "problem_id": "lc-maximum-depth-of-binary-tree",
+    "title": "Maximum Depth of Binary Tree",
+    "slug": "maximum-depth-of-binary-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def maxDepth(self, root: Optional[TreeNode]) -> int:\n        if not root:\n            return 0\n        return 1 + max(self.maxDepth(root.left), self.maxDepth(root.right))",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 100,
+    "problem_id": "lc-same-tree",
+    "title": "Same Tree",
+    "slug": "same-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        if not p and not q:\n            return True\n        if not p or not q:\n            return False\n        if p.val != q.val:\n            return False\n        return self.isSameTree(p.left, q.left) and self.isSameTree(p.right, q.right)",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 572,
+    "problem_id": "lc-subtree-of-another-tree",
+    "title": "Subtree of Another Tree",
+    "slug": "subtree-of-another-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def isSubtree(self, root: Optional[TreeNode], subRoot: Optional[TreeNode]) -> bool:\n        def same(a, b):\n            if not a and not b:\n                return True\n            if not a or not b:\n                return False\n            if a.val != b.val:\n                return False\n            return same(a.left, b.left) and same(a.right, b.right)\n\n        if not root:\n            return False\n        if same(root, subRoot):\n            return True\n        return self.isSubtree(root.left, subRoot) or self.isSubtree(root.right, subRoot)",
+    "optimal_time_complexity": "O(n * m)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 102,
+    "problem_id": "lc-binary-tree-level-order-traversal",
+    "title": "Binary Tree Level Order Traversal",
+    "slug": "binary-tree-level-order-traversal",
+    "solution_code": "from typing import List, Optional\nfrom collections import deque\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        if not root:\n            return []\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                if node.left:\n                    queue.append(node.left)\n                if node.right:\n                    queue.append(node.right)\n            result.append(level)\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  }
+]

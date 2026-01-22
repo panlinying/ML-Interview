@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 417,
+    "problem_id": "lc-pacific-atlantic-water-flow",
+    "title": "Pacific Atlantic Water Flow",
+    "slug": "pacific-atlantic-water-flow",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def pacificAtlantic(self, heights: List[List[int]]) -> List[List[int]]:\n        if not heights or not heights[0]:\n            return []\n\n        rows, cols = len(heights), len(heights[0])\n        pacific = [[False] * cols for _ in range(rows)]\n        atlantic = [[False] * cols for _ in range(rows)]\n\n        def dfs(r, c, visited, prev_height):\n            if r < 0 or r >= rows or c < 0 or c >= cols:\n                return\n            if visited[r][c] or heights[r][c] < prev_height:\n                return\n            visited[r][c] = True\n            dfs(r + 1, c, visited, heights[r][c])\n            dfs(r - 1, c, visited, heights[r][c])\n            dfs(r, c + 1, visited, heights[r][c])\n            dfs(r, c - 1, visited, heights[r][c])\n\n        for r in range(rows):\n            dfs(r, 0, pacific, heights[r][0])\n            dfs(r, cols - 1, atlantic, heights[r][cols - 1])\n        for c in range(cols):\n            dfs(0, c, pacific, heights[0][c])\n            dfs(rows - 1, c, atlantic, heights[rows - 1][c])\n\n        result = []\n        for r in range(rows):\n            for c in range(cols):\n                if pacific[r][c] and atlantic[r][c]:\n                    result.append([r, c])\n        return result",
+    "optimal_time_complexity": "O(m * n)",
+    "optimal_space_complexity": "O(m * n)"
+  },
+  {
+    "problem_number": 207,
+    "problem_id": "lc-course-schedule",
+    "title": "Course Schedule",
+    "slug": "course-schedule",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        visiting = [0] * numCourses\n\n        def dfs(course):\n            if visiting[course] == 1:\n                return False\n            if visiting[course] == 2:\n                return True\n            visiting[course] = 1\n            for pre in graph[course]:\n                if not dfs(pre):\n                    return False\n            visiting[course] = 2\n            return True\n\n        for c in range(numCourses):\n            if not dfs(c):\n                return False\n        return True",
+    "optimal_time_complexity": "O(n + p)",
+    "optimal_space_complexity": "O(n + p)"
+  },
+  {
+    "problem_number": 210,
+    "problem_id": "lc-course-schedule-ii",
+    "title": "Course Schedule II",
+    "slug": "course-schedule-ii",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def findOrder(self, numCourses: int, prerequisites: List[List[int]]) -> List[int]:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        state = [0] * numCourses\n        order = []\n\n        def dfs(course):\n            if state[course] == 1:\n                return False\n            if state[course] == 2:\n                return True\n            state[course] = 1\n            for pre in graph[course]:\n                if not dfs(pre):\n                    return False\n            state[course] = 2\n            order.append(course)\n            return True\n\n        for c in range(numCourses):\n            if not dfs(c):\n                return []\n\n        return order",
+    "optimal_time_complexity": "O(n + p)",
+    "optimal_space_complexity": "O(n + p)"
+  },
+  {
+    "problem_number": 994,
+    "problem_id": "lc-rotting-oranges",
+    "title": "Rotting Oranges",
+    "slug": "rotting-oranges",
+    "solution_code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        queue = deque()\n        fresh = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == 2:\n                    queue.append((r, c))\n                elif grid[r][c] == 1:\n                    fresh += 1\n\n        minutes = 0\n        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]\n        while queue and fresh > 0:\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in directions:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                        grid[nr][nc] = 2\n                        fresh -= 1\n                        queue.append((nr, nc))\n            minutes += 1\n\n        return minutes if fresh == 0 else -1",
+    "optimal_time_complexity": "O(m * n)",
+    "optimal_space_complexity": "O(m * n)"
+  },
+  {
+    "problem_number": 286,
+    "problem_id": "lc-walls-and-gates",
+    "title": "Walls and Gates",
+    "slug": "walls-and-gates",
+    "solution_code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def wallsAndGates(self, rooms: List[List[int]]) -> None:\n        if not rooms or not rooms[0]:\n            return\n        rows, cols = len(rooms), len(rooms[0])\n        queue = deque()\n        INF = 2 ** 31 - 1\n\n        for r in range(rows):\n            for c in range(cols):\n                if rooms[r][c] == 0:\n                    queue.append((r, c))\n\n        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]\n        while queue:\n            r, c = queue.popleft()\n            for dr, dc in directions:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and rooms[nr][nc] == INF:\n                    rooms[nr][nc] = rooms[r][c] + 1\n                    queue.append((nr, nc))",
+    "optimal_time_complexity": "O(m * n)",
+    "optimal_space_complexity": "O(m * n)"
+  },
+  {
+    "problem_number": 70,
+    "problem_id": "lc-climbing-stairs",
+    "title": "Climbing Stairs",
+    "slug": "climbing-stairs",
+    "solution_code": "class Solution:\n    def climbStairs(self, n: int) -> int:\n        if n <= 2:\n            return n\n        prev2, prev1 = 1, 2\n        for _ in range(3, n + 1):\n            prev2, prev1 = prev1, prev1 + prev2\n        return prev1",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 746,
+    "problem_id": "lc-min-cost-climbing-stairs",
+    "title": "Min Cost Climbing Stairs",
+    "slug": "min-cost-climbing-stairs",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def minCostClimbingStairs(self, cost: List[int]) -> int:\n        prev2, prev1 = 0, 0\n        for i in range(2, len(cost) + 1):\n            curr = min(prev1 + cost[i - 1], prev2 + cost[i - 2])\n            prev2, prev1 = prev1, curr\n        return prev1",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 198,
+    "problem_id": "lc-house-robber",
+    "title": "House Robber",
+    "slug": "house-robber",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def rob(self, nums: List[int]) -> int:\n        prev2 = 0\n        prev1 = 0\n        for num in nums:\n            prev2, prev1 = prev1, max(prev1, prev2 + num)\n        return prev1",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 213,
+    "problem_id": "lc-house-robber-ii",
+    "title": "House Robber II",
+    "slug": "house-robber-ii",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def rob(self, nums: List[int]) -> int:\n        if not nums:\n            return 0\n        if len(nums) == 1:\n            return nums[0]\n\n        def rob_line(values):\n            prev2 = 0\n            prev1 = 0\n            for num in values:\n                prev2, prev1 = prev1, max(prev1, prev2 + num)\n            return prev1\n\n        return max(rob_line(nums[1:]), rob_line(nums[:-1]))",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 5,
+    "problem_id": "lc-longest-palindromic-substring",
+    "title": "Longest Palindromic Substring",
+    "slug": "longest-palindromic-substring",
+    "solution_code": "class Solution:\n    def longestPalindrome(self, s: str) -> str:\n        if len(s) <= 1:\n            return s\n\n        start, end = 0, 0\n\n        def expand(left, right):\n            while left >= 0 and right < len(s) and s[left] == s[right]:\n                left -= 1\n                right += 1\n            return left + 1, right - 1\n\n        for i in range(len(s)):\n            l1, r1 = expand(i, i)\n            l2, r2 = expand(i, i + 1)\n            if r1 - l1 > end - start:\n                start, end = l1, r1\n            if r2 - l2 > end - start:\n                start, end = l2, r2\n\n        return s[start:end + 1]",
+    "optimal_time_complexity": "O(n^2)",
+    "optimal_space_complexity": "O(1)"
+  }
+]

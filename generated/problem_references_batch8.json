@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 323,
+    "problem_id": "lc-number-of-connected-components-in-an-undirected-graph",
+    "title": "Number of Connected Components",
+    "slug": "number-of-connected-components-in-an-undirected-graph",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def countComponents(self, n: int, edges: List[List[int]]) -> int:\n        parent = list(range(n))\n        rank = [0] * n\n\n        def find(x):\n            while parent[x] != x:\n                parent[x] = parent[parent[x]]\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra == rb:\n                return 0\n            if rank[ra] < rank[rb]:\n                ra, rb = rb, ra\n            parent[rb] = ra\n            if rank[ra] == rank[rb]:\n                rank[ra] += 1\n            return 1\n\n        components = n\n        for u, v in edges:\n            components -= union(u, v)\n        return components",
+    "optimal_time_complexity": "O(n + e)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 261,
+    "problem_id": "lc-graph-valid-tree",
+    "title": "Graph Valid Tree",
+    "slug": "graph-valid-tree",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def validTree(self, n: int, edges: List[List[int]]) -> bool:\n        if len(edges) != n - 1:\n            return False\n        parent = list(range(n))\n        rank = [0] * n\n\n        def find(x):\n            while parent[x] != x:\n                parent[x] = parent[parent[x]]\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra == rb:\n                return False\n            if rank[ra] < rank[rb]:\n                ra, rb = rb, ra\n            parent[rb] = ra\n            if rank[ra] == rank[rb]:\n                rank[ra] += 1\n            return True\n\n        for u, v in edges:\n            if not union(u, v):\n                return False\n        return True",
+    "optimal_time_complexity": "O(n + e)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 127,
+    "problem_id": "lc-word-ladder",
+    "title": "Word Ladder",
+    "slug": "word-ladder",
+    "solution_code": "from typing import List\nfrom collections import deque, defaultdict\n\nclass Solution:\n    def ladderLength(self, beginWord: str, endWord: str, wordList: List[str]) -> int:\n        if endWord not in wordList:\n            return 0\n        L = len(beginWord)\n        patterns = defaultdict(list)\n        for word in wordList:\n            for i in range(L):\n                patterns[word[:i] + '*' + word[i + 1:]].append(word)\n\n        queue = deque([(beginWord, 1)])\n        visited = {beginWord}\n        while queue:\n            word, depth = queue.popleft()\n            if word == endWord:\n                return depth\n            for i in range(L):\n                pattern = word[:i] + '*' + word[i + 1:]\n                for neighbor in patterns.get(pattern, []):\n                    if neighbor not in visited:\n                        visited.add(neighbor)\n                        queue.append((neighbor, depth + 1))\n                patterns[pattern] = []\n        return 0",
+    "optimal_time_complexity": "O(n * L^2)",
+    "optimal_space_complexity": "O(n * L)"
+  },
+  {
+    "problem_number": 703,
+    "problem_id": "lc-kth-largest-element-in-a-stream",
+    "title": "Kth Largest Element in Stream",
+    "slug": "kth-largest-element-in-a-stream",
+    "solution_code": "import heapq\n\nclass KthLargest:\n    def __init__(self, k: int, nums):\n        self.k = k\n        self.heap = nums\n        heapq.heapify(self.heap)\n        while len(self.heap) > k:\n            heapq.heappop(self.heap)\n\n    def add(self, val: int) -> int:\n        if len(self.heap) < self.k:\n            heapq.heappush(self.heap, val)\n        elif val > self.heap[0]:\n            heapq.heapreplace(self.heap, val)\n        return self.heap[0]",
+    "optimal_time_complexity": "O(n log k)",
+    "optimal_space_complexity": "O(k)"
+  },
+  {
+    "problem_number": 215,
+    "problem_id": "lc-kth-largest-element-in-an-array",
+    "title": "Kth Largest Element in Array",
+    "slug": "kth-largest-element-in-an-array",
+    "solution_code": "from typing import List\nimport random\n\nclass Solution:\n    def findKthLargest(self, nums: List[int], k: int) -> int:\n        k = len(nums) - k\n\n        def partition(left, right, pivot_index):\n            pivot = nums[pivot_index]\n            nums[pivot_index], nums[right] = nums[right], nums[pivot_index]\n            store = left\n            for i in range(left, right):\n                if nums[i] < pivot:\n                    nums[store], nums[i] = nums[i], nums[store]\n                    store += 1\n            nums[right], nums[store] = nums[store], nums[right]\n            return store\n\n        def select(left, right):\n            if left == right:\n                return nums[left]\n            pivot_index = random.randint(left, right)\n            pivot_index = partition(left, right, pivot_index)\n            if pivot_index == k:\n                return nums[pivot_index]\n            if pivot_index < k:\n                return select(pivot_index + 1, right)\n            return select(left, pivot_index - 1)\n\n        return select(0, len(nums) - 1)",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 621,
+    "problem_id": "lc-task-scheduler",
+    "title": "Task Scheduler",
+    "slug": "task-scheduler",
+    "solution_code": "from typing import List\nfrom collections import Counter\n\nclass Solution:\n    def leastInterval(self, tasks: List[str], n: int) -> int:\n        counts = Counter(tasks)\n        max_count = max(counts.values())\n        max_tasks = sum(1 for c in counts.values() if c == max_count)\n        part_count = max_count - 1\n        part_length = n + 1\n        min_length = part_count * part_length + max_tasks\n        return max(len(tasks), min_length)",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 355,
+    "problem_id": "lc-design-twitter",
+    "title": "Design Twitter",
+    "slug": "design-twitter",
+    "solution_code": "import heapq\n\nclass Twitter:\n    def __init__(self):\n        self.time = 0\n        self.tweets = {}\n        self.following = {}\n\n    def postTweet(self, userId: int, tweetId: int) -> None:\n        self.time += 1\n        self.tweets.setdefault(userId, []).append((self.time, tweetId))\n\n    def getNewsFeed(self, userId: int):\n        heap = []\n        users = self.following.get(userId, set()) | {userId}\n        for uid in users:\n            if uid in self.tweets and self.tweets[uid]:\n                time, tid = self.tweets[uid][-1]\n                idx = len(self.tweets[uid]) - 1\n                heapq.heappush(heap, (-time, tid, uid, idx))\n\n        result = []\n        while heap and len(result) < 10:\n            neg_time, tid, uid, idx = heapq.heappop(heap)\n            result.append(tid)\n            if idx > 0:\n                time, tid = self.tweets[uid][idx - 1]\n                heapq.heappush(heap, (-time, tid, uid, idx - 1))\n        return result\n\n    def follow(self, followerId: int, followeeId: int) -> None:\n        self.following.setdefault(followerId, set()).add(followeeId)\n\n    def unfollow(self, followerId: int, followeeId: int) -> None:\n        if followerId in self.following:\n            self.following[followerId].discard(followeeId)",
+    "optimal_time_complexity": "O(k log k)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 295,
+    "problem_id": "lc-find-median-from-data-stream",
+    "title": "Find Median from Data Stream",
+    "slug": "find-median-from-data-stream",
+    "solution_code": "import heapq\n\nclass MedianFinder:\n    def __init__(self):\n        self.small = []\n        self.large = []\n\n    def addNum(self, num: int) -> None:\n        heapq.heappush(self.small, -num)\n        if self.large and -self.small[0] > self.large[0]:\n            heapq.heappush(self.large, -heapq.heappop(self.small))\n        if len(self.small) > len(self.large) + 1:\n            heapq.heappush(self.large, -heapq.heappop(self.small))\n        if len(self.large) > len(self.small) + 1:\n            heapq.heappush(self.small, -heapq.heappop(self.large))\n\n    def findMedian(self) -> float:\n        if len(self.small) > len(self.large):\n            return -self.small[0]\n        if len(self.large) > len(self.small):\n            return self.large[0]\n        return (-self.small[0] + self.large[0]) / 2",
+    "optimal_time_complexity": "O(log n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 208,
+    "problem_id": "lc-implement-trie-prefix-tree",
+    "title": "Implement Trie",
+    "slug": "implement-trie-prefix-tree",
+    "solution_code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_end = False\n\nclass Trie:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def insert(self, word: str) -> None:\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_end = True\n\n    def search(self, word: str) -> bool:\n        node = self.root\n        for ch in word:\n            if ch not in node.children:\n                return False\n            node = node.children[ch]\n        return node.is_end\n\n    def startsWith(self, prefix: str) -> bool:\n        node = self.root\n        for ch in prefix:\n            if ch not in node.children:\n                return False\n            node = node.children[ch]\n        return True",
+    "optimal_time_complexity": "O(L)",
+    "optimal_space_complexity": "O(n * L)"
+  },
+  {
+    "problem_number": 211,
+    "problem_id": "lc-design-add-and-search-words-data-structure",
+    "title": "Design Add and Search Words",
+    "slug": "design-add-and-search-words-data-structure",
+    "solution_code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_end = False\n\nclass WordDictionary:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def addWord(self, word: str) -> None:\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_end = True\n\n    def search(self, word: str) -> bool:\n        def dfs(node, i):\n            if i == len(word):\n                return node.is_end\n            ch = word[i]\n            if ch == '.':\n                return any(dfs(child, i + 1) for child in node.children.values())\n            if ch not in node.children:\n                return False\n            return dfs(node.children[ch], i + 1)\n\n        return dfs(self.root, 0)",
+    "optimal_time_complexity": "O(L)",
+    "optimal_space_complexity": "O(n * L)"
+  }
+]

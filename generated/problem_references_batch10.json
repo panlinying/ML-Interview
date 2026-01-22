@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 853,
+    "problem_id": "lc-car-fleet",
+    "title": "Car Fleet",
+    "slug": "car-fleet",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def carFleet(self, target: int, position: List[int], speed: List[int]) -> int:\n        cars = sorted(zip(position, speed), reverse=True)\n        fleets = 0\n        slowest_time = 0\n        for pos, spd in cars:\n            time = (target - pos) / spd\n            if time > slowest_time:\n                fleets += 1\n                slowest_time = time\n        return fleets",
+    "optimal_time_complexity": "O(n log n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 84,
+    "problem_id": "lc-largest-rectangle-in-histogram",
+    "title": "Largest Rectangle in Histogram",
+    "slug": "largest-rectangle-in-histogram",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def largestRectangleArea(self, heights: List[int]) -> int:\n        stack = []\n        best = 0\n        heights.append(0)\n        for i, h in enumerate(heights):\n            start = i\n            while stack and stack[-1][1] > h:\n                idx, height = stack.pop()\n                best = max(best, height * (i - idx))\n                start = idx\n            stack.append((start, h))\n        heights.pop()\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 57,
+    "problem_id": "lc-insert-interval",
+    "title": "Insert Interval",
+    "slug": "insert-interval",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def insert(self, intervals: List[List[int]], newInterval: List[int]) -> List[List[int]]:\n        result = []\n        i = 0\n        while i < len(intervals) and intervals[i][1] < newInterval[0]:\n            result.append(intervals[i])\n            i += 1\n        while i < len(intervals) and intervals[i][0] <= newInterval[1]:\n            newInterval[0] = min(newInterval[0], intervals[i][0])\n            newInterval[1] = max(newInterval[1], intervals[i][1])\n            i += 1\n        result.append(newInterval)\n        while i < len(intervals):\n            result.append(intervals[i])\n            i += 1\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 56,
+    "problem_id": "lc-merge-intervals",
+    "title": "Merge Intervals",
+    "slug": "merge-intervals",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n        intervals.sort(key=lambda x: x[0])\n        result = []\n        for start, end in intervals:\n            if not result or result[-1][1] < start:\n                result.append([start, end])\n            else:\n                result[-1][1] = max(result[-1][1], end)\n        return result",
+    "optimal_time_complexity": "O(n log n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 435,
+    "problem_id": "lc-non-overlapping-intervals",
+    "title": "Non-overlapping Intervals",
+    "slug": "non-overlapping-intervals",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def eraseOverlapIntervals(self, intervals: List[List[int]]) -> int:\n        if not intervals:\n            return 0\n        intervals.sort(key=lambda x: x[1])\n        removals = 0\n        end = intervals[0][1]\n        for start, finish in intervals[1:]:\n            if start < end:\n                removals += 1\n            else:\n                end = finish\n        return removals",
+    "optimal_time_complexity": "O(n log n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 252,
+    "problem_id": "lc-meeting-rooms",
+    "title": "Meeting Rooms",
+    "slug": "meeting-rooms",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def canAttendMeetings(self, intervals: List[List[int]]) -> bool:\n        intervals.sort(key=lambda x: x[0])\n        for i in range(1, len(intervals)):\n            if intervals[i][0] < intervals[i - 1][1]:\n                return False\n        return True",
+    "optimal_time_complexity": "O(n log n)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 253,
+    "problem_id": "lc-meeting-rooms-ii",
+    "title": "Meeting Rooms II",
+    "slug": "meeting-rooms-ii",
+    "solution_code": "from typing import List\nimport heapq\n\nclass Solution:\n    def minMeetingRooms(self, intervals: List[List[int]]) -> int:\n        if not intervals:\n            return 0\n        intervals.sort(key=lambda x: x[0])\n        heap = []\n        for start, end in intervals:\n            if heap and heap[0] <= start:\n                heapq.heapreplace(heap, end)\n            else:\n                heapq.heappush(heap, end)\n        return len(heap)",
+    "optimal_time_complexity": "O(n log n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 78,
+    "problem_id": "lc-subsets",
+    "title": "Subsets",
+    "slug": "subsets",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def subsets(self, nums: List[int]) -> List[List[int]]:\n        result = []\n\n        def backtrack(start, path):\n            result.append(path[:])\n            for i in range(start, len(nums)):\n                path.append(nums[i])\n                backtrack(i + 1, path)\n                path.pop()\n\n        backtrack(0, [])\n        return result",
+    "optimal_time_complexity": "O(n * 2^n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 90,
+    "problem_id": "lc-subsets-ii",
+    "title": "Subsets II",
+    "slug": "subsets-ii",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def subsetsWithDup(self, nums: List[int]) -> List[List[int]]:\n        nums.sort()\n        result = []\n\n        def backtrack(start, path):\n            result.append(path[:])\n            i = start\n            while i < len(nums):\n                path.append(nums[i])\n                backtrack(i + 1, path)\n                path.pop()\n                i += 1\n                while i < len(nums) and nums[i] == nums[i - 1]:\n                    i += 1\n\n        backtrack(0, [])\n        return result",
+    "optimal_time_complexity": "O(n * 2^n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 46,
+    "problem_id": "lc-permutations",
+    "title": "Permutations",
+    "slug": "permutations",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def permute(self, nums: List[int]) -> List[List[int]]:\n        result = []\n\n        def backtrack(start):\n            if start == len(nums):\n                result.append(nums[:])\n                return\n            for i in range(start, len(nums)):\n                nums[start], nums[i] = nums[i], nums[start]\n                backtrack(start + 1)\n                nums[start], nums[i] = nums[i], nums[start]\n\n        backtrack(0)\n        return result",
+    "optimal_time_complexity": "O(n * n!)",
+    "optimal_space_complexity": "O(n)"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "problem_number": 199,
+    "problem_id": "lc-binary-tree-right-side-view",
+    "title": "Binary Tree Right Side View",
+    "slug": "binary-tree-right-side-view",
+    "solution_code": "from typing import List, Optional\nfrom collections import deque\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def rightSideView(self, root: Optional[TreeNode]) -> List[int]:\n        if not root:\n            return []\n        result = []\n        queue = deque([root])\n        while queue:\n            level_size = len(queue)\n            for i in range(level_size):\n                node = queue.popleft()\n                if i == level_size - 1:\n                    result.append(node.val)\n                if node.left:\n                    queue.append(node.left)\n                if node.right:\n                    queue.append(node.right)\n        return result",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 98,
+    "problem_id": "lc-validate-binary-search-tree",
+    "title": "Validate Binary Search Tree",
+    "slug": "validate-binary-search-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def isValidBST(self, root: Optional[TreeNode]) -> bool:\n        def dfs(node, low, high):\n            if not node:\n                return True\n            if not (low < node.val < high):\n                return False\n            return dfs(node.left, low, node.val) and dfs(node.right, node.val, high)\n\n        return dfs(root, float('-inf'), float('inf'))",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 230,
+    "problem_id": "lc-kth-smallest-element-in-a-bst",
+    "title": "Kth Smallest Element in BST",
+    "slug": "kth-smallest-element-in-a-bst",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def kthSmallest(self, root: Optional[TreeNode], k: int) -> int:\n        stack = []\n        curr = root\n        while curr or stack:\n            while curr:\n                stack.append(curr)\n                curr = curr.left\n            curr = stack.pop()\n            k -= 1\n            if k == 0:\n                return curr.val\n            curr = curr.right\n        return -1",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 235,
+    "problem_id": "lc-lowest-common-ancestor-of-a-binary-search-tree",
+    "title": "Lowest Common Ancestor of BST",
+    "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def lowestCommonAncestor(self, root: Optional[TreeNode], p: TreeNode, q: TreeNode) -> TreeNode:\n        curr = root\n        while curr:\n            if p.val < curr.val and q.val < curr.val:\n                curr = curr.left\n            elif p.val > curr.val and q.val > curr.val:\n                curr = curr.right\n            else:\n                return curr",
+    "optimal_time_complexity": "O(h)",
+    "optimal_space_complexity": "O(1)"
+  },
+  {
+    "problem_number": 236,
+    "problem_id": "lc-lowest-common-ancestor-of-a-binary-tree",
+    "title": "Lowest Common Ancestor of BT",
+    "slug": "lowest-common-ancestor-of-a-binary-tree",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def lowestCommonAncestor(self, root: Optional[TreeNode], p: TreeNode, q: TreeNode) -> TreeNode:\n        if not root or root == p or root == q:\n            return root\n        left = self.lowestCommonAncestor(root.left, p, q)\n        right = self.lowestCommonAncestor(root.right, p, q)\n        if left and right:\n            return root\n        return left or right",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 297,
+    "problem_id": "lc-serialize-and-deserialize-binary-tree",
+    "title": "Serialize and Deserialize BT",
+    "slug": "serialize-and-deserialize-binary-tree",
+    "solution_code": "from collections import deque\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Codec:\n    def serialize(self, root):\n        if not root:\n            return '[]'\n        result = []\n        queue = deque([root])\n        while queue:\n            node = queue.popleft()\n            if node:\n                result.append(node.val)\n                queue.append(node.left)\n                queue.append(node.right)\n            else:\n                result.append(None)\n        while result and result[-1] is None:\n            result.pop()\n        return str(result)\n\n    def deserialize(self, data):\n        data = data.strip()\n        if data == '[]':\n            return None\n        values = eval(data)\n        root = TreeNode(values[0])\n        queue = deque([root])\n        i = 1\n        while queue and i < len(values):\n            node = queue.popleft()\n            if i < len(values) and values[i] is not None:\n                node.left = TreeNode(values[i])\n                queue.append(node.left)\n            i += 1\n            if i < len(values) and values[i] is not None:\n                node.right = TreeNode(values[i])\n                queue.append(node.right)\n            i += 1\n        return root",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(n)"
+  },
+  {
+    "problem_number": 124,
+    "problem_id": "lc-binary-tree-maximum-path-sum",
+    "title": "Binary Tree Maximum Path Sum",
+    "slug": "binary-tree-maximum-path-sum",
+    "solution_code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def maxPathSum(self, root: Optional[TreeNode]) -> int:\n        best = float('-inf')\n\n        def dfs(node):\n            nonlocal best\n            if not node:\n                return 0\n            left = max(dfs(node.left), 0)\n            right = max(dfs(node.right), 0)\n            best = max(best, node.val + left + right)\n            return node.val + max(left, right)\n\n        dfs(root)\n        return best",
+    "optimal_time_complexity": "O(n)",
+    "optimal_space_complexity": "O(h)"
+  },
+  {
+    "problem_number": 200,
+    "problem_id": "lc-number-of-islands",
+    "title": "Number of Islands",
+    "slug": "number-of-islands",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def numIslands(self, grid: List[List[str]]) -> int:\n        if not grid:\n            return 0\n\n        rows, cols = len(grid), len(grid[0])\n\n        def dfs(r, c):\n            if r < 0 or r >= rows or c < 0 or c >= cols:\n                return\n            if grid[r][c] != '1':\n                return\n            grid[r][c] = '0'\n            dfs(r + 1, c)\n            dfs(r - 1, c)\n            dfs(r, c + 1)\n            dfs(r, c - 1)\n\n        count = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == '1':\n                    dfs(r, c)\n                    count += 1\n        return count",
+    "optimal_time_complexity": "O(m * n)",
+    "optimal_space_complexity": "O(m * n)"
+  },
+  {
+    "problem_number": 695,
+    "problem_id": "lc-max-area-of-island",
+    "title": "Max Area of Island",
+    "slug": "max-area-of-island",
+    "solution_code": "from typing import List\n\nclass Solution:\n    def maxAreaOfIsland(self, grid: List[List[int]]) -> int:\n        if not grid:\n            return 0\n\n        rows, cols = len(grid), len(grid[0])\n\n        def dfs(r, c):\n            if r < 0 or r >= rows or c < 0 or c >= cols:\n                return 0\n            if grid[r][c] != 1:\n                return 0\n            grid[r][c] = 0\n            area = 1\n            area += dfs(r + 1, c)\n            area += dfs(r - 1, c)\n            area += dfs(r, c + 1)\n            area += dfs(r, c - 1)\n            return area\n\n        best = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == 1:\n                    best = max(best, dfs(r, c))\n        return best",
+    "optimal_time_complexity": "O(m * n)",
+    "optimal_space_complexity": "O(m * n)"
+  },
+  {
+    "problem_number": 133,
+    "problem_id": "lc-clone-graph",
+    "title": "Clone Graph",
+    "slug": "clone-graph",
+    "solution_code": "from typing import Optional\nfrom collections import deque\n\nclass Node:\n    def __init__(self, val=0, neighbors=None):\n        self.val = val\n        self.neighbors = neighbors if neighbors is not None else []\n\nclass Solution:\n    def cloneGraph(self, node: Optional['Node']) -> Optional['Node']:\n        if not node:\n            return None\n        clones = {node: Node(node.val)}\n        queue = deque([node])\n        while queue:\n            curr = queue.popleft()\n            for neighbor in curr.neighbors:\n                if neighbor not in clones:\n                    clones[neighbor] = Node(neighbor.val)\n                    queue.append(neighbor)\n                clones[curr].neighbors.append(clones[neighbor])\n        return clones[node]",
+    "optimal_time_complexity": "O(n + e)",
+    "optimal_space_complexity": "O(n)"
+  }
+]
