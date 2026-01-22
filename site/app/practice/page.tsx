@@ -966,13 +966,6 @@ function PracticeContent() {
                 >
                   Reset
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigator.clipboard.writeText(code)}
-                >
-                  Copy Code
-                </Button>
               </div>
             </div>
           </div>
