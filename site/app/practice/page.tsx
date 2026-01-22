@@ -262,13 +262,13 @@ function PracticeContent() {
     const media = window.matchMedia('(min-width: 1024px)')
     const handleChange = () => setIsDesktop(media.matches)
     handleChange()
-    if (media.addEventListener) {
+    if ('addEventListener' in media) {
       media.addEventListener('change', handleChange)
     } else {
       media.addListener(handleChange)
     }
     return () => {
-      if (media.addEventListener) {
+      if ('removeEventListener' in media) {
         media.removeEventListener('change', handleChange)
       } else {
         media.removeListener(handleChange)
