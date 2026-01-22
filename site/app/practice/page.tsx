@@ -125,6 +125,10 @@ const CODE_SOURCE_PRIORITY: Record<CodeSource, number> = {
   storage: 4,
 }
 
+const MIN_SPLIT_PERCENT = 25
+const MAX_SPLIT_PERCENT = 75
+const SPLIT_STORAGE_KEY = 'practice:splitPercent'
+
 const EDITOR_SETTINGS_KEY = 'practice:editor-settings'
 
 const THEME_OPTIONS = [
@@ -215,8 +219,12 @@ function PracticeContent() {
   const [editorTheme, setEditorTheme] = useState('vs-dark')
   const [tabSize, setTabSize] = useState(4)
   const [insertSpaces, setInsertSpaces] = useState(true)
+  const [splitPercent, setSplitPercent] = useState(50)
+  const [isResizing, setIsResizing] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
 
   const codeSourceRef = useRef<CodeSource>('empty')
+  const splitContainerRef = useRef<HTMLDivElement | null>(null)
 
   const problemInfo = parseLeetCodeSlug(slug)
   const problemId = `lc-${slug}`
@@ -248,6 +256,80 @@ function PracticeContent() {
     setCode(nextCode)
     setIsCodeReady(true)
   }, [starterCode])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(min-width: 1024px)')
+    const handleChange = () => setIsDesktop(media.matches)
+    handleChange()
+    if (media.addEventListener) {
+      media.addEventListener('change', handleChange)
+    } else {
+      media.addListener(handleChange)
+    }
+    return () => {
+      if (media.addEventListener) {
+        media.removeEventListener('change', handleChange)
+      } else {
+        media.removeListener(handleChange)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(SPLIT_STORAGE_KEY)
+    if (!stored) return
+    const parsed = Number(stored)
+    if (!Number.isFinite(parsed)) return
+    const clamped = Math.min(MAX_SPLIT_PERCENT, Math.max(MIN_SPLIT_PERCENT, parsed))
+    setSplitPercent(clamped)
+  }, [])
+
+  useEffect(() => {
+    if (!isDesktop || typeof window === 'undefined') return
+    window.localStorage.setItem(SPLIT_STORAGE_KEY, String(Math.round(splitPercent)))
+  }, [splitPercent, isDesktop])
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [])
+
+  const handleResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDesktop || !splitContainerRef.current) return
+    event.preventDefault()
+    setIsResizing(true)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    const updateSplit = (clientX: number) => {
+      const rect = splitContainerRef.current?.getBoundingClientRect()
+      if (!rect || rect.width === 0) return
+      const next = ((clientX - rect.left) / rect.width) * 100
+      const clamped = Math.min(MAX_SPLIT_PERCENT, Math.max(MIN_SPLIT_PERCENT, next))
+      setSplitPercent(clamped)
+    }
+
+    updateSplit(event.clientX)
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      updateSplit(moveEvent.clientX)
+    }
+
+    const handlePointerUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+  }, [isDesktop])
 
   // Timer effect
   useEffect(() => {
@@ -615,9 +697,13 @@ function PracticeContent() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-w-0">
+      <div
+        ref={splitContainerRef}
+        className={`flex-1 flex flex-col overflow-hidden min-w-0 lg:grid ${isResizing ? 'select-none' : ''}`}
+        style={isDesktop ? { gridTemplateColumns: `${splitPercent}fr 6px ${100 - splitPercent}fr` } : undefined}
+      >
         {/* Left Panel - Problem Description */}
-        <div className="flex-1 lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border overflow-auto p-6 min-h-0 min-w-0">
+        <div className="flex-1 lg:flex-none border-b lg:border-b-0 lg:border-r border-border overflow-auto p-6 min-h-0 min-w-0">
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-li:my-1">
             {detailLoading && (
               <p className="text-muted-foreground">Loading description...</p>
@@ -782,8 +868,39 @@ function PracticeContent() {
           </div>
         </div>
 
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panels"
+          aria-valuenow={Math.round(splitPercent)}
+          aria-valuemin={MIN_SPLIT_PERCENT}
+          aria-valuemax={MAX_SPLIT_PERCENT}
+          aria-valuetext={`${Math.round(splitPercent)}%`}
+          tabIndex={0}
+          onPointerDown={handleResizeStart}
+          onDoubleClick={() => setSplitPercent(50)}
+          title="Drag to resize panels"
+          onKeyDown={(event) => {
+            if (!isDesktop) return
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault()
+              setSplitPercent(prev => Math.max(MIN_SPLIT_PERCENT, prev - 2))
+            }
+            if (event.key === 'ArrowRight') {
+              event.preventDefault()
+              setSplitPercent(prev => Math.min(MAX_SPLIT_PERCENT, prev + 2))
+            }
+          }}
+          className={`group hidden lg:flex items-stretch justify-center cursor-col-resize touch-none bg-border/30 hover:bg-border/60 focus:outline-none focus:ring-2 focus:ring-ring relative ${isResizing ? 'bg-border/80' : ''}`}
+        >
+          <div className="h-12 w-0.5 rounded-full bg-border/80 group-hover:bg-border" />
+          <span className={`pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 rounded-md border border-border bg-background/90 px-2 py-0.5 text-[11px] text-muted-foreground shadow-sm transition-opacity ${isResizing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            {Math.round(splitPercent)}%
+          </span>
+        </div>
+
         {/* Right Panel - Code Editor */}
-        <div className="flex-1 lg:w-1/2 flex flex-col overflow-hidden min-h-0 min-w-0">
+        <div className="flex-1 lg:flex-none flex flex-col overflow-hidden min-h-0 min-w-0">
           {/* Editor Controls */}
           <div className="flex-shrink-0 border-b border-border px-4 py-2 bg-muted/30">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
