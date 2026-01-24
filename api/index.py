@@ -412,7 +412,11 @@ def _lc_annotation_matches(ann, name):
     if ann == name:
         return True
     if isinstance(ann, str):
-        return ann == name or ann.endswith(f".{name}")
+        return ann == name or ann.endswith(f".{name}") or name in ann
+    # Check string representation for forward references like Optional['Node']
+    ann_str = str(ann)
+    if name in ann_str:
+        return True
     origin = typing.get_origin(ann)
     if origin is typing.Union:
         return any(_lc_annotation_matches(a, name) for a in typing.get_args(ann) if a is not type(None))
@@ -484,11 +488,51 @@ def _lc_treenode_to_list(root):
     return result
 
 
+def _lc_adjlist_to_graph(adj_list):
+    if not adj_list or not adj_list[0]:
+        return None
+    nodes = {}
+    for i in range(1, len(adj_list) + 1):
+        nodes[i] = Node(i)
+    for i, neighbors in enumerate(adj_list):
+        node = nodes[i + 1]
+        for neighbor_val in neighbors:
+            if neighbor_val in nodes:
+                node.neighbors.append(nodes[neighbor_val])
+    return nodes.get(1)
+
+
+def _lc_graph_to_adjlist(node):
+    if node is None:
+        return []
+    visited = {}
+    queue = [node]
+    visited[node.val] = node
+    while queue:
+        curr = queue.pop(0)
+        for neighbor in curr.neighbors:
+            if neighbor.val not in visited:
+                visited[neighbor.val] = neighbor
+                queue.append(neighbor)
+    if not visited:
+        return []
+    max_val = max(visited.keys())
+    result = []
+    for i in range(1, max_val + 1):
+        if i in visited:
+            result.append([n.val for n in visited[i].neighbors])
+        else:
+            result.append([])
+    return result
+
+
 def _lc_convert_arg(value, ann):
     if _lc_annotation_matches(ann, "ListNode"):
         return _lc_list_to_listnode(value)
     if _lc_annotation_matches(ann, "TreeNode"):
         return _lc_list_to_treenode(value)
+    if _lc_annotation_matches(ann, "Node"):
+        return _lc_adjlist_to_graph(value)
     return value
 
 
@@ -510,6 +554,8 @@ def _lc_serialize(value):
         return _lc_listnode_to_list(value)
     if isinstance(value, TreeNode):
         return _lc_treenode_to_list(value)
+    if isinstance(value, Node):
+        return _lc_graph_to_adjlist(value)
     if isinstance(value, list):
         return [_lc_serialize(v) for v in value]
     if isinstance(value, tuple):
@@ -2068,6 +2114,183 @@ def get_problem_starter_code(
     record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
     if not record:
         raise HTTPException(status_code=404, detail="Problem not found")
+
+    return ProblemStarterCodeResponse(
+        problem_id=record.problem_id,
+        starter_code=record.starter_code,
+        optimal_time_complexity=record.optimal_time_complexity,
+        optimal_space_complexity=record.optimal_space_complexity,
+    )
+
+
+# --- Admin Problem Management ---
+
+class AdminProblemListItem(BaseModel):
+    problem_id: str
+    slug: str
+    title: Optional[str]
+    difficulty: Optional[str]
+    has_description: bool
+    has_solution: bool
+    has_starter_code: bool
+    test_case_count: int
+    optimal_time_complexity: Optional[str]
+    optimal_space_complexity: Optional[str]
+
+
+class AdminProblemListResponse(BaseModel):
+    problems: List[AdminProblemListItem]
+    total: int
+
+
+@app.get("/api/admin/problems", response_model=AdminProblemListResponse)
+def list_admin_problems(
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """List all problems with their status (admin only)."""
+    check_rate_limit(request, "default", db)
+
+    # Get all problem references
+    refs = db.query(ProblemReference).all()
+
+    # Get all problem details
+    details = db.query(ProblemDetail).all()
+    details_by_slug = {d.slug: d for d in details}
+
+    # Get test case counts
+    test_counts = db.query(
+        ProblemTestCase.problem_id,
+        func.count(ProblemTestCase.id)
+    ).group_by(ProblemTestCase.problem_id).all()
+    test_count_map = {pid: cnt for pid, cnt in test_counts}
+
+    problems = []
+    for ref in refs:
+        slug = ref.problem_id[3:] if ref.problem_id.startswith("lc-") else ref.problem_id
+        detail = details_by_slug.get(slug)
+
+        problems.append(AdminProblemListItem(
+            problem_id=ref.problem_id,
+            slug=slug,
+            title=detail.title if detail else None,
+            difficulty=detail.difficulty if detail else None,
+            has_description=bool(detail and detail.description_html),
+            has_solution=bool(ref.solution_code),
+            has_starter_code=bool(ref.starter_code),
+            test_case_count=test_count_map.get(ref.problem_id, 0),
+            optimal_time_complexity=ref.optimal_time_complexity,
+            optimal_space_complexity=ref.optimal_space_complexity,
+        ))
+
+    # Sort by problem_id
+    problems.sort(key=lambda p: p.problem_id)
+
+    return AdminProblemListResponse(problems=problems, total=len(problems))
+
+
+class ProblemDetailUpdate(BaseModel):
+    title: Optional[str] = None
+    description_html: Optional[str] = None
+    difficulty: Optional[str] = None
+
+    @field_validator('difficulty')
+    @classmethod
+    def validate_difficulty(cls, v):
+        if v and v not in ["easy", "medium", "hard"]:
+            raise ValueError("Difficulty must be easy, medium, or hard")
+        return v
+
+    @field_validator('title')
+    @classmethod
+    def validate_title(cls, v):
+        if v:
+            return truncate_text(v, max_length=255)
+        return v
+
+    @field_validator('description_html')
+    @classmethod
+    def validate_description(cls, v):
+        if v:
+            return truncate_text(v, max_length=200000)
+        return v
+
+
+@app.put("/api/admin/problem-details/{slug}", response_model=ProblemDetailResponse)
+def update_problem_detail(
+    slug: str,
+    data: ProblemDetailUpdate,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Update problem description/title/difficulty (admin only)."""
+    check_rate_limit(request, "default", db)
+
+    normalized = validate_leetcode_slug(slug)
+    existing = db.query(ProblemDetail).filter(ProblemDetail.slug == normalized).first()
+
+    now = datetime.utcnow()
+
+    if existing:
+        if data.title is not None:
+            existing.title = data.title
+        if data.description_html is not None:
+            existing.description_html = data.description_html
+        if data.difficulty is not None:
+            existing.difficulty = data.difficulty
+        existing.source = "manual"
+        db.commit()
+        db.refresh(existing)
+        return ProblemDetailResponse.model_validate(existing)
+
+    # Create new record if it doesn't exist
+    record = ProblemDetail(
+        slug=normalized,
+        title=data.title or normalized,
+        description_html=data.description_html or "",
+        difficulty=data.difficulty,
+        source="manual",
+        fetched_at=now,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return ProblemDetailResponse.model_validate(record)
+
+
+class StarterCodeUpdate(BaseModel):
+    starter_code: str
+
+    @field_validator('starter_code')
+    @classmethod
+    def validate_starter_code(cls, v):
+        if v:
+            return truncate_text(v, max_length=50000)
+        return v
+
+
+@app.patch("/api/admin/problems/{problem_id}/starter", response_model=ProblemStarterCodeResponse)
+def update_starter_code(
+    problem_id: str,
+    data: StarterCodeUpdate,
+    request: Request,
+    _: bool = Depends(verify_admin_secret),
+    db=Depends(get_db),
+):
+    """Update starter code for a problem (admin only)."""
+    check_rate_limit(request, "default", db)
+
+    normalized = validate_problem_id_value(problem_id)
+    record = db.query(ProblemReference).filter(ProblemReference.problem_id == normalized).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Problem not found")
+
+    record.starter_code = data.starter_code
+    db.commit()
+    db.refresh(record)
 
     return ProblemStarterCodeResponse(
         problem_id=record.problem_id,

@@ -39,7 +39,7 @@ fi
 echo ""
 echo "🎯 Starting services..."
 echo ""
-echo "Frontend: http://localhost:3000"
+echo "Frontend: http://localhost:6090"
 echo "Backend:  http://localhost:8000"
 echo "API Docs: http://localhost:8000/docs"
 echo ""
@@ -51,7 +51,7 @@ unset NEXT_PUBLIC_BASE_PATH
 unset NEXT_STATIC_EXPORT
 
 # Start both services in background
-(cd site && npm run dev) &
+(cd site && PORT=6090 npm run dev) &
 FRONTEND_PID=$!
 
 uv run uvicorn api.index:app --reload --port 8000 &
