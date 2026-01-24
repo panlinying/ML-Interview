@@ -189,6 +189,8 @@ function getIndentOptionValue(tabSize: number, insertSpaces: boolean): string {
 function PracticeContent() {
   const searchParams = useSearchParams()
   const slug = searchParams.get('problem') || ''
+  const fromSlug = searchParams.get('from') || ''
+  const backUrl = fromSlug ? `/docs/${fromSlug}` : '/problems'
   const { token, isAuthenticated, isLoading: authLoading, login } = useAuth()
 
   const [problem, setProblem] = useState<Problem | null>(null)
@@ -621,7 +623,7 @@ function PracticeContent() {
       <header className="flex-shrink-0 border-b border-border bg-card px-4 py-2">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/problems" className="text-muted-foreground hover:text-foreground">
+            <Link href={backUrl} className="text-muted-foreground hover:text-foreground">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>

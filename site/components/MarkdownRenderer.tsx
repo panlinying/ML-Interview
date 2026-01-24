@@ -12,9 +12,10 @@ import { cn } from '@/lib/utils'
 interface Props {
   content: string
   className?: string
+  currentSlug?: string
 }
 
-export function MarkdownRenderer({ content, className }: Props) {
+export function MarkdownRenderer({ content, className, currentSlug }: Props) {
   const docsPrefix = `${basePath}/docs/`
 
   return (
@@ -35,9 +36,12 @@ export function MarkdownRenderer({ content, className }: Props) {
             const leetcodeMatch = href?.match(/leetcode\.com\/problems\/([^/]+)/)
             if (leetcodeMatch) {
               const problemSlug = leetcodeMatch[1]
+              const practiceUrl = currentSlug
+                ? `/practice?problem=${problemSlug}&from=${encodeURIComponent(currentSlug)}`
+                : `/practice?problem=${problemSlug}`
               return (
                 <Link
-                  href={`/practice?problem=${problemSlug}`}
+                  href={practiceUrl}
                   className="text-primary hover:underline inline-flex items-center gap-1"
                 >
                   {children}

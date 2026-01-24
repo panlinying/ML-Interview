@@ -75,7 +75,7 @@ export default function DocPage({ params }: { params: { slug: string[] } }) {
       </nav>
 
       {/* Content */}
-      <MarkdownRenderer content={processedContent} />
+      <MarkdownRenderer content={processedContent} currentSlug={file.slug} />
 
       <DocEngagement contentSlug={file.slug} />
 
