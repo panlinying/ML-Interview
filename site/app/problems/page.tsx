@@ -194,7 +194,7 @@ export default function ProblemsPage() {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold text-foreground">Problem Tracker</h1>
           <p className="text-muted-foreground">
-            Sign in to track your LeetCode and coding problem progress.
+            Sign in to track practice problems across your sets.
           </p>
           <div className="flex justify-center gap-3 pt-4">
             <Button onClick={() => login('github', '/problems')}>
@@ -232,7 +232,7 @@ export default function ProblemsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Problem Tracker</h1>
-          <p className="text-muted-foreground">Track your LeetCode progress</p>
+          <p className="text-muted-foreground">Track practice problems across sets</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard">

@@ -6,7 +6,7 @@ const contentRoot = path.resolve(process.cwd(), '..', 'content')
 const outDir = path.resolve(process.cwd(), 'public')
 const outFile = path.join(outDir, 'search-index.json')
 
-const contentDirs = ['00-Reference', '10-Weeks', '20-Daily', '30-ML-Fundamentals', '40-ML-System-Design']
+const contentDirs = ['00-Start', '10-Sets', '20-ML-Core', '30-System-Design']
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
 
 function getFilesRecursively(dir) {
@@ -69,11 +69,10 @@ function getTocFromMarkdown(markdown) {
 
 function getCategoryTitle(category) {
   const categoryNames = {
-    '00-Reference': 'Reference',
-    '10-Weeks': 'Weekly Plans',
-    '20-Daily': 'Daily Notes',
-    '30-ML-Fundamentals': 'ML Fundamentals',
-    '40-ML-System-Design': 'System Design',
+    '00-Start': 'Start',
+    '10-Sets': 'Practice Sets',
+    '20-ML-Core': 'ML Core',
+    '30-System-Design': 'System Design',
   }
   return categoryNames[category] || category
 }
@@ -133,4 +132,3 @@ function main() {
 }
 
 main()
-

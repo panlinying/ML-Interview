@@ -1229,7 +1229,7 @@ class DashboardResponse(BaseModel):
 
 
 # Total content items in curriculum (approximate)
-TOTAL_CONTENT_ITEMS = 98
+TOTAL_CONTENT_ITEMS = 95
 
 
 @app.get("/api/dashboard", response_model=DashboardResponse)

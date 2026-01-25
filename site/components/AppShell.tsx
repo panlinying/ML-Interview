@@ -27,7 +27,7 @@ export function AppShell({ children }: AppShellProps) {
       {!hideSidebar && <Sidebar />}
       <div className={cn('flex-1 flex flex-col', !hideSidebar && 'lg:ml-72')}>
         {!hideHeader && <Header />}
-        <main className="flex-1">
+        <main className={cn('flex-1', !hideHeader && 'px-4 sm:px-6 lg:px-8 py-6')}>
           {children}
         </main>
       </div>

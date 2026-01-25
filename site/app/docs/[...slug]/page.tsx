@@ -35,11 +35,24 @@ export default function DocPage({ params }: { params: { slug: string[] } }) {
   }
 
   // Get breadcrumb parts
+  const categoryLabels: Record<string, string> = {
+    '00-Start': 'Start',
+    '10-Sets': 'Practice Sets',
+    '20-ML-Core': 'ML Core',
+    '30-System-Design': 'System Design',
+  }
+
   const parts = file.slug.split('/')
-  const breadcrumbs = parts.map((part, i) => ({
-    name: part,
-    path: parts.slice(0, i + 1).join('/'),
-  }))
+  const breadcrumbs = parts.map((part, i) => {
+    const isLast = i === parts.length - 1
+    const label = isLast
+      ? file.title
+      : categoryLabels[part] || part
+    return {
+      name: label,
+      path: parts.slice(0, i + 1).join('/'),
+    }
+  })
 
   // Pre-process wiki links to resolve them to full slugs
   const processedContent = file.content.replace(

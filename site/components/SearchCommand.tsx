@@ -173,10 +173,10 @@ export function SearchCommand() {
   const popularPages = searchIndex
     .filter(item => item.kind === 'page')
     .filter(item =>
-      item.slug.includes('Start Here') ||
-      item.slug.includes('Calendar Map') ||
+      item.slug.includes('Practice Home') ||
+      item.slug.includes('Practice Loop') ||
       item.slug.includes('Framework') ||
-      item.slug.includes('Week 1')
+      item.slug.includes('Set 01')
     )
     .slice(0, 5)
 

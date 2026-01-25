@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ML Interview Prep',
-  description: 'A 10-week ML engineer interview preparation system',
+  description: 'Practice-first ML interview prep for experienced engineers',
   icons: {
     icon: '/favicon.svg',
     apple: '/logo.svg',

@@ -5,7 +5,7 @@ import matter from 'gray-matter'
 const preferredRoot = path.resolve(process.cwd(), '..', 'content')
 const fallbackRoot = path.resolve(process.cwd(), 'content')
 const contentRoot = fs.existsSync(preferredRoot) ? preferredRoot : fallbackRoot
-const contentDirs = ['00-Reference', '10-Weeks', '20-Daily', '30-ML-Fundamentals', '40-ML-System-Design']
+const contentDirs = ['00-Start', '10-Sets', '20-ML-Core', '30-System-Design']
 
 export interface MarkdownFile {
   slug: string
@@ -98,13 +98,12 @@ export function getNavigation(): NavItem[] {
   }
 
   // Sort and structure navigation
-  const categoryOrder = ['00-Reference', '10-Weeks', '20-Daily', '30-ML-Fundamentals', '40-ML-System-Design']
+  const categoryOrder = ['00-Start', '10-Sets', '20-ML-Core', '30-System-Design']
   const categoryNames: Record<string, string> = {
-    '00-Reference': 'Reference',
-    '10-Weeks': 'Weekly Plans',
-    '20-Daily': 'Daily Notes',
-    '30-ML-Fundamentals': 'ML Fundamentals',
-    '40-ML-System-Design': 'System Design',
+    '00-Start': 'Start',
+    '10-Sets': 'Practice Sets',
+    '20-ML-Core': 'ML Core',
+    '30-System-Design': 'System Design',
   }
 
   for (const cat of categoryOrder) {
@@ -129,7 +128,7 @@ export function getAllSlugs(): string[] {
 export function resolveWikiLink(linkText: string): string | null {
   const files = getAllMarkdownFiles()
 
-  // Try to find by exact slug match (full path like "20-Daily/2026-01-12")
+  // Try to find by exact slug match (full path like "10-Sets/Set 01 - Arrays & Two Pointers")
   const bySlug = files.find(f => f.slug === linkText)
   if (bySlug) return bySlug.slug
 

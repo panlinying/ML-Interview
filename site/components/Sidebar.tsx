@@ -3,63 +3,44 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
-import { basePath, docHref, homeHref } from '@/lib/basePath'
+import { basePath, docHref, homeHref, appHref } from '@/lib/basePath'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
   title: string
-  slug: string
-  category: string
-  children?: NavItem[]
+  href: string
+}
+
+interface NavSection {
+  id: string
+  title: string
+  items: NavItem[]
 }
 
 // Navigation structure
-const navigation: NavItem[] = [
+const navigation: NavSection[] = [
   {
-    title: 'Reference',
-    slug: '00-Reference',
-    category: '00-Reference',
-    children: [
-      { title: 'Start Here', slug: '00-Reference/Start Here', category: '00-Reference' },
-      { title: 'Learning Path', slug: '00-Reference/Learning Path', category: '00-Reference' },
-      { title: 'Calendar Map', slug: '00-Reference/Calendar Map', category: '00-Reference' },
-      { title: 'Execution Playbook', slug: '00-Reference/Execution Playbook (Optimized)', category: '00-Reference' },
-      { title: 'Quick Reference Links', slug: '00-Reference/Quick Reference Links', category: '00-Reference' },
+    id: 'practice',
+    title: 'Practice',
+    items: [
+      { title: 'Practice Home', href: docHref('00-Start/Practice Home') },
+      { title: 'Practice Loop', href: docHref('00-Start/Practice Loop') },
+      { title: 'Practice Sets', href: appHref('/sets') },
+      { title: 'Problem Tracker', href: appHref('/problems') },
+      { title: 'Dashboard', href: appHref('/dashboard') },
+      { title: 'Quick Links', href: docHref('00-Start/Quick Links') },
     ],
   },
   {
-    title: 'Weekly Plans',
-    slug: '10-Weeks',
-    category: '10-Weeks',
-    children: Array.from({ length: 10 }, (_, i) => ({
-      title: `Week ${i + 1}`,
-      slug: `10-Weeks/Week ${i + 1}`,
-      category: '10-Weeks',
-    })),
-  },
-  {
-    title: 'ML Fundamentals',
-    slug: '30-ML-Fundamentals',
-    category: '30-ML-Fundamentals',
-    children: [
-      { title: 'Week 1-2: Math + Classical ML', slug: '30-ML-Fundamentals/Week 1-2 Math Foundations + Classical ML', category: '30-ML-Fundamentals' },
-      { title: 'Week 3-4: Deep Learning', slug: '30-ML-Fundamentals/Week 3-4 Deep Learning Foundations', category: '30-ML-Fundamentals' },
-      { title: 'Week 5-6: CNNs, RNNs, Transformers', slug: '30-ML-Fundamentals/Week 5-6 CNNs, RNNs, Transformers', category: '30-ML-Fundamentals' },
-      { title: 'PyTorch Practice', slug: '30-ML-Fundamentals/PyTorch Practice', category: '30-ML-Fundamentals' },
-    ],
-  },
-  {
-    title: 'System Design',
-    slug: '40-ML-System-Design',
-    category: '40-ML-System-Design',
-    children: [
-      { title: 'Framework & Systems', slug: '40-ML-System-Design/ML System Design - Framework & Systems', category: '40-ML-System-Design' },
-      { title: 'Recommendation System', slug: '40-ML-System-Design/Systems/Recommendation System', category: '40-ML-System-Design' },
-      { title: 'Feed Ranking', slug: '40-ML-System-Design/Systems/Feed Ranking', category: '40-ML-System-Design' },
-      { title: 'Ads Click Prediction', slug: '40-ML-System-Design/Systems/Ads Click Prediction', category: '40-ML-System-Design' },
-      { title: 'Search Ranking', slug: '40-ML-System-Design/Systems/Search Ranking', category: '40-ML-System-Design' },
+    id: 'core',
+    title: 'Core',
+    items: [
+      { title: 'ML Core Overview', href: docHref('20-ML-Core/Overview') },
+      { title: 'ML Cheat Sheet', href: docHref('20-ML-Core/ML Cheat Sheet') },
+      { title: 'System Design Overview', href: docHref('30-System-Design/Overview') },
+      { title: 'Framework & Systems', href: docHref('30-System-Design/Framework & Systems') },
     ],
   },
 ]
@@ -67,18 +48,17 @@ const navigation: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    '00-Reference': true,
-    '10-Weeks': false,
-    '30-ML-Fundamentals': true,
-    '40-ML-System-Design': true,
+    practice: true,
+    core: true,
   })
   const [mobileOpen, setMobileOpen] = useState(false)
 
   // Auto-expand section containing current page
   useEffect(() => {
+    const normalizedPath = pathname.replace(/\/$/, '') || '/'
     for (const section of navigation) {
-      if (section.children?.some(item => pathname.includes(encodeURIComponent(item.slug.split('/').pop() || '')))) {
-        setExpanded(prev => ({ ...prev, [section.slug]: true }))
+      if (section.items.some(item => (item.href.replace(/\/$/, '') || '/') === normalizedPath)) {
+        setExpanded(prev => ({ ...prev, [section.id]: true }))
         break
       }
     }
@@ -107,8 +87,8 @@ export function Sidebar() {
     }
   }, [mobileOpen])
 
-  const toggleSection = useCallback((slug: string) => {
-    setExpanded(prev => ({ ...prev, [slug]: !prev[slug] }))
+  const toggleSection = useCallback((id: string) => {
+    setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
   }, [])
 
   const closeMobileMenu = useCallback(() => {
@@ -166,7 +146,7 @@ export function Sidebar() {
                   <h1 className="text-xl font-bold text-foreground">
                     ML Interview Prep
                   </h1>
-                  <p className="text-sm text-muted-foreground">10-Week Curriculum</p>
+                  <p className="text-sm text-muted-foreground">Practice-first prep</p>
                 </div>
               </div>
             </Link>
@@ -187,24 +167,24 @@ export function Sidebar() {
 
           {/* Navigation */}
           <ScrollArea className="flex-1 px-4 py-4">
-            <nav className="space-y-2" aria-label="Documentation sections">
+            <nav className="space-y-2" aria-label="Primary navigation">
               {navigation.map(section => (
-                <div key={section.slug} className="space-y-1">
+                <div key={section.id} className="space-y-1">
                   <button
-                    onClick={() => toggleSection(section.slug)}
+                    onClick={() => toggleSection(section.id)}
                     className={cn(
                       "w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors",
                       "text-foreground hover:bg-accent hover:text-accent-foreground",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     )}
-                    aria-expanded={expanded[section.slug]}
-                    aria-controls={`nav-section-${section.slug}`}
+                    aria-expanded={expanded[section.id]}
+                    aria-controls={`nav-section-${section.id}`}
                   >
                     <span>{section.title}</span>
                     <svg
                       className={cn(
                         "w-4 h-4 transition-transform duration-200",
-                        expanded[section.slug] ? 'rotate-90' : ''
+                        expanded[section.id] ? 'rotate-90' : ''
                       )}
                       fill="none"
                       stroke="currentColor"
@@ -215,20 +195,22 @@ export function Sidebar() {
                     </svg>
                   </button>
 
-                  {expanded[section.slug] && section.children && (
+                  {expanded[section.id] && section.items.length > 0 && (
                     <div
-                      id={`nav-section-${section.slug}`}
+                      id={`nav-section-${section.id}`}
                       className="ml-2 pl-3 border-l border-border space-y-1"
                       role="group"
-                      aria-label={`${section.title} pages`}
+                      aria-label={`${section.title} links`}
                     >
-                      {section.children.map(item => {
-                        const href = docHref(item.slug)
-                        const isActive = pathname === href || pathname === `${href}/`
+                      {section.items.map(item => {
+                        const href = item.href
+                        const normalizedHref = href.replace(/\/$/, '') || '/'
+                        const normalizedPath = pathname.replace(/\/$/, '') || '/'
+                        const isActive = normalizedPath === normalizedHref
 
                         return (
                           <Link
-                            key={item.slug}
+                            key={item.href}
                             href={href}
                             onClick={closeMobileMenu}
                             className={cn(

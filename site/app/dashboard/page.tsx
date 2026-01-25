@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/useAuth'
 import { apiRequest } from '@/lib/api'
-import { docHref } from '@/lib/basePath'
+import { appHref, docHref } from '@/lib/basePath'
 import { Button } from '@/components/ui/button'
 
 type DashboardData = {
@@ -325,9 +325,9 @@ export default function DashboardPage() {
         </div>
         {data.recent_activity.length === 0 ? (
           <div className="p-6 text-center text-muted-foreground">
-            <p>No activity yet. Start learning to track your progress!</p>
-            <Link href={docHref('00-Reference/Start Here')}>
-              <Button className="mt-4">Start Learning</Button>
+            <p>No activity yet. Start a practice set to track your progress.</p>
+            <Link href={docHref('00-Start/Practice Home')}>
+              <Button className="mt-4">Open Practice Home</Button>
             </Link>
           </div>
         ) : (
@@ -366,41 +366,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
-          href={docHref('00-Reference/Calendar Map')}
-          className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
-        >
-          <div className="p-3 rounded-lg bg-primary/10 text-primary">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
-              View Calendar
-            </h3>
-            <p className="text-sm text-muted-foreground">10-week study plan</p>
-          </div>
-        </Link>
-
-        <Link
-          href="/problems"
-          className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
-        >
-          <div className="p-3 rounded-lg bg-green-500/10 text-green-500">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
-              Problem Tracker
-            </h3>
-            <p className="text-sm text-muted-foreground">Track LeetCode progress</p>
-          </div>
-        </Link>
-
-        <Link
-          href={docHref('10-Weeks/Week 1')}
+          href={appHref('/sets')}
           className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
         >
           <div className="p-3 rounded-lg bg-primary/10 text-primary">
@@ -410,9 +376,43 @@ export default function DashboardPage() {
           </div>
           <div>
             <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
-              Continue Learning
+              Practice Sets
             </h3>
-            <p className="text-sm text-muted-foreground">Pick up where you left off</p>
+            <p className="text-sm text-muted-foreground">Run your next set</p>
+          </div>
+        </Link>
+
+        <Link
+          href={docHref('20-ML-Core/Overview')}
+          className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
+        >
+          <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+              ML Core
+            </h3>
+            <p className="text-sm text-muted-foreground">Refresh fundamentals</p>
+          </div>
+        </Link>
+
+        <Link
+          href={docHref('30-System-Design/Overview')}
+          className="group flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:border-primary transition-colors"
+        >
+          <div className="p-3 rounded-lg bg-orange-500/10 text-orange-500">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+              System Design
+            </h3>
+            <p className="text-sm text-muted-foreground">Run a case drill</p>
           </div>
         </Link>
       </div>

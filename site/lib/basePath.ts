@@ -9,3 +9,8 @@ export function docHref(slug: string): string {
     .join('/')
   return `${basePath}/docs/${encoded}`
 }
+
+export function appHref(path: string): string {
+  const normalized = path.startsWith('/') ? path : `/${path}`
+  return `${basePath}${normalized}`
+}

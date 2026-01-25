@@ -2,29 +2,28 @@
 
 [![GitHub Pages](https://img.shields.io/badge/View%20Online-GitHub%20Pages-blue)](https://www.aceinterview.online/)
 
-A comprehensive 10-week ML engineer interview preparation system designed as an Obsidian vault with a modern web interface.
+Practice-first ML interview preparation for experienced engineers, designed as an Obsidian vault with a modern web interface.
 
 **View online:** 
 - https://www.aceinterview.online
 
 ## Overview
 
-This project provides a structured curriculum covering:
+This project provides a practice-first curriculum covering:
 
-- **Part 1 (Weeks 1-4):** Coding & Algorithm interviews - LeetCode problems with pattern-based learning
-- **Part 2 (Weeks 1-6):** ML Fundamentals - Math, classical ML, deep learning, modern architectures
-- **Part 3 (Weeks 7-10):** ML System Design - Framework and real-world case studies
+- **Practice Sets:** pattern-focused coding sets built from real interview problems
+- **ML Core:** fundamentals refreshers with clear explanations and tradeoffs
+- **System Design Drills:** end-to-end ML system design frameworks and cases
 
 ## Project Structure
 
 ```
 ML-Interview/
 ├── content/                # Obsidian vault content
-│   ├── 00-Reference/       # Start Here, Calendar Map, Execution Playbook
-│   ├── 10-Weeks/           # Weekly overview pages
-│   ├── 20-Daily/           # Daily notes (70 days)
-│   ├── 30-ML-Fundamentals/ # ML theory and fundamentals
-│   ├── 40-ML-System-Design/# System design case studies
+│   ├── 00-Start/           # Practice Home, Core Flow, Practice Loop
+│   ├── 10-Sets/            # Practice sets
+│   ├── 20-ML-Core/         # ML fundamentals modules + guide
+│   ├── 30-System-Design/   # System design drills + cases
 │   └── ml_interview_detailed_guide.md
 ├── site/                   # Next.js web application
 │   ├── app/                # Next.js App Router pages
@@ -60,8 +59,8 @@ uv run alembic upgrade head
 
 Visit [aceinterview.online](https://www.aceinterview.online/) to:
 
-1. Browse the curriculum with a modern, searchable interface
-2. Navigate through daily notes and weekly plans
+1. Start a practice set and jump straight into coding
+2. Refresh ML fundamentals and system design drills
 3. Follow wiki-style links between related topics
 4. Access everything from any device
 
@@ -71,9 +70,9 @@ For a local, customizable experience:
 
 1. Clone this repository
 2. Open `content/` as an Obsidian vault
-3. Start with `00-Reference/Start Here.md`
-4. Navigate to today's date in `Calendar Map`
-5. Follow the `Execution Playbook` methodology
+3. Start with `00-Start/Practice Home.md`
+4. Pick your next set in `10-Sets/`
+5. Follow the `Practice Loop` methodology
 
 ### The 5-Step Learning Loop
 
@@ -101,41 +100,6 @@ uv sync
 # Verify installation
 uv run python -c "import httpx; print('✅ Dependencies installed successfully')"
 ```
-
-## Regenerating Notes
-
-If you modify the curriculum, regenerate the daily notes:
-
-```bash
-# Using UV (recommended)
-uv run ml-interview content/ml_interview_detailed_guide.md --out content
-
-# With options
-uv run ml-interview content/ml_interview_detailed_guide.md \
-  --out content \
-  --days 7 \
-  --start 2026-01-12
-
-# Force overwrite existing notes
-uv run ml-interview content/ml_interview_detailed_guide.md --out content --force
-
-# Or run as a module
-uv run python -m ml_interview content/ml_interview_detailed_guide.md --out content
-
-# Or use the convenience script directly
-uv run python run.py content/ml_interview_detailed_guide.md --out content
-```
-
-### CLI Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `md_path` | Path to plan markdown file | Required |
-| `--out` | Output vault directory | Current directory |
-| `--days` | Days per week to split into | 5 |
-| `--start` | Start date (YYYY-MM-DD) | None (uses "Week X - Day Y" naming) |
-| `--force` | Overwrite existing day notes | False |
-| `--version` | Show version number | - |
 
 ## Requirements
 

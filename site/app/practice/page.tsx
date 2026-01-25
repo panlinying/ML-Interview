@@ -598,10 +598,10 @@ function PracticeContent() {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold text-foreground">Practice Page</h1>
           <p className="text-muted-foreground">
-            Select a LeetCode problem from the curriculum to start practicing.
+            Select a problem from a practice set to start practicing.
           </p>
-          <Link href="/problems">
-            <Button>View Problem Tracker</Button>
+          <Link href="/sets">
+            <Button>Browse Practice Sets</Button>
           </Link>
         </div>
       </div>
