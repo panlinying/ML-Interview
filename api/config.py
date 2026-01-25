@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # URLs
     app_url: str = "http://localhost:3000"
-    api_url: str = "http://localhost:8000/api"
+    api_url: str = "http://localhost:8090/api"
     allowed_origins: str = "http://localhost:3000"
 
     # Logging

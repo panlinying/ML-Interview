@@ -207,6 +207,86 @@ def truncate_text(value: str, max_length: int = 20000) -> str:
     return value[:max_length]
 
 
+def build_code_notes(code: str) -> str:
+    return f"**Code (Python):**\n```python\n{code}\n```"
+
+
+def merge_notes_with_code(notes: Optional[str], code: str) -> str:
+    code_section = build_code_notes(code)
+    if not notes or not notes.strip():
+        return code_section
+    pattern = re.compile(r"\*\*Code \(Python\):\*\*\n```(?:python)?\n[\s\S]*?```", re.MULTILINE)
+    if pattern.search(notes):
+        return pattern.sub(code_section, notes).strip()
+    return f"{notes.rstrip()}\n\n---\n\n{code_section}"
+
+
+def infer_problem_title_from_id(problem_id: str) -> str:
+    base = problem_id
+    if base.startswith("lc-"):
+        base = base[3:]
+    words = base.replace("-", " ").split()
+    return " ".join(word.capitalize() for word in words) if words else problem_id
+
+
+def record_submission_progress(
+    db,
+    user: User,
+    problem_id: str,
+    code: str,
+    result_status: str,
+) -> None:
+    now = datetime.utcnow()
+    progress = db.query(ProblemProgress).filter(
+        ProblemProgress.user_id == user.id,
+        ProblemProgress.problem_id == problem_id,
+    ).first()
+
+    existing_notes = html.unescape(progress.notes) if progress and progress.notes else ""
+    merged_notes = merge_notes_with_code(existing_notes, code)
+
+    if progress:
+        progress.notes = merged_notes
+
+        if progress.status == "not_started":
+            progress.status = result_status
+            if result_status in ["attempted", "solved"]:
+                progress.attempts = (progress.attempts or 0) + 1
+                progress.last_attempted_at = now
+            if result_status == "solved":
+                progress.solved_at = now
+        elif progress.status == "attempted" and result_status == "solved":
+            progress.status = "solved"
+            progress.solved_at = now
+
+        db.commit()
+        return
+
+    slug = None
+    if problem_id.startswith("lc-"):
+        slug = problem_id[3:].lower()
+    detail = db.query(ProblemDetail).filter(ProblemDetail.slug == slug).first() if slug else None
+
+    problem_name = detail.title if detail else infer_problem_title_from_id(problem_id)
+    difficulty = detail.difficulty if detail else None
+
+    progress = ProblemProgress(
+        user_id=user.id,
+        problem_id=problem_id,
+        problem_name=problem_name,
+        difficulty=difficulty,
+        pattern=None,
+        status=result_status,
+        notes=merged_notes,
+        time_spent_minutes=0,
+        attempts=1 if result_status in ["attempted", "solved"] else 0,
+        last_attempted_at=now if result_status in ["attempted", "solved"] else None,
+        solved_at=now if result_status == "solved" else None,
+    )
+    db.add(progress)
+    db.commit()
+
+
 LEETCODE_ALLOWED_TAGS = {
     "a", "b", "blockquote", "br", "code", "div", "em", "h1", "h2", "h3", "h4",
     "h5", "h6", "hr", "i", "img", "li", "ol", "p", "pre", "strong", "sub",
@@ -1409,6 +1489,7 @@ class ProblemDetailResponse(BaseModel):
     title: str
     description_html: str
     difficulty: Optional[str]
+    tags: Optional[str]
     source: str
     fetched_at: Optional[datetime]
     updated_at: Optional[datetime]
@@ -1858,6 +1939,8 @@ def submit_problem(
         raise HTTPException(status_code=404, detail="No test cases configured.")
 
     response = evaluate_tests(tests, data.code, PISTON_LANGUAGE, include_public_details=True)
+    result_status = "solved" if response.status in ["pass", "pass_slow"] else "attempted"
+    record_submission_progress(db, user, normalized, data.code, result_status)
     update_user_streak(user, db)
     return response
 
@@ -2194,6 +2277,7 @@ class ProblemDetailUpdate(BaseModel):
     title: Optional[str] = None
     description_html: Optional[str] = None
     difficulty: Optional[str] = None
+    tags: Optional[str] = None
 
     @field_validator('difficulty')
     @classmethod
@@ -2214,6 +2298,13 @@ class ProblemDetailUpdate(BaseModel):
     def validate_description(cls, v):
         if v:
             return truncate_text(v, max_length=200000)
+        return v
+
+    @field_validator('tags')
+    @classmethod
+    def validate_tags(cls, v):
+        if v:
+            return truncate_text(v, max_length=500)
         return v
 
 
@@ -2240,6 +2331,8 @@ def update_problem_detail(
             existing.description_html = data.description_html
         if data.difficulty is not None:
             existing.difficulty = data.difficulty
+        if data.tags is not None:
+            existing.tags = data.tags
         existing.source = "manual"
         db.commit()
         db.refresh(existing)
@@ -2251,6 +2344,7 @@ def update_problem_detail(
         title=data.title or normalized,
         description_html=data.description_html or "",
         difficulty=data.difficulty,
+        tags=data.tags,
         source="manual",
         fetched_at=now,
     )

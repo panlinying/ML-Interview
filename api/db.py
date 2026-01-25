@@ -126,6 +126,7 @@ class ProblemDetail(Base):
     title = Column(String(500), nullable=False)
     description_html = Column(Text, nullable=False)
     difficulty = Column(String(20))
+    tags = Column(Text)
     source = Column(String(50), nullable=False, default="leetcode")
     fetched_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

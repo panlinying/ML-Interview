@@ -90,3 +90,12 @@ def multi_head_attention(X, num_heads, d_model):
 ```
 
 ---
+
+## Deep dive links
+
+- **[[30-ML-Fundamentals/Guide/Deep Learning (Guide)]]**
+- **[[30-ML-Fundamentals/Guide/Specialized Topics (Guide)]]**
+- **[[30-ML-Fundamentals/Concepts Tracker#Deep Learning]]**
+- **[[30-ML-Fundamentals/Concepts Tracker#NLP]]**
+- **[[30-ML-Fundamentals/Concepts Tracker#RecSys]]**
+- **[[00-Reference/ML Cheat Sheet]]**

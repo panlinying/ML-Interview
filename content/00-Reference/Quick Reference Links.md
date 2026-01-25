@@ -1,5 +1,10 @@
 # Quick Reference Links
 
+## Local Quick References
+- [[00-Reference/ML Cheat Sheet]]
+- [[30-ML-Fundamentals/Guide/Overview]]
+- [[30-ML-Fundamentals/Concepts Tracker]]
+
 ## LeetCode Lists
 - NeetCode 150: https://neetcode.io/practice
 - Grind 75: https://www.techinterviewhandbook.org/grind75

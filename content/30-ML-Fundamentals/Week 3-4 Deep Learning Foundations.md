@@ -79,3 +79,9 @@ class NeuralNetwork:
 ```
 
 ---
+
+## Deep dive links
+
+- **[[30-ML-Fundamentals/Guide/Deep Learning (Guide)]]**
+- **[[30-ML-Fundamentals/Concepts Tracker#Deep Learning]]**
+- **[[00-Reference/ML Cheat Sheet]]**

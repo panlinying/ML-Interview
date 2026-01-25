@@ -37,6 +37,25 @@ ML-Interview/
 
 ## Getting Started
 
+### Quick Start (Local Dev)
+
+```bash
+# 1. Setup environment
+cp .env.example .env.local
+# Edit .env.local with your database URL and secrets
+
+# 2. Start everything with one command
+./start-dev.sh
+```
+
+Then run migrations (requires DATABASE_URL in .env.local):
+```bash
+set -a
+source .env.local
+set +a
+uv run alembic upgrade head
+```
+
 ### Using the Web Interface
 
 Visit [aceinterview.online](https://www.aceinterview.online/) to:
@@ -149,8 +168,8 @@ cp .env.example .env.local
 
 This starts:
 - Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- Backend: http://localhost:8090
+- API Docs: http://localhost:8090/docs
 
 ### Manual Setup (if needed)
 
@@ -161,8 +180,21 @@ cd site && npm install && npm run dev
 
 **Backend:**
 ```bash
-uv sync && uv run uvicorn api.index:app --reload --port 8000
+uv sync && uv run uvicorn api.index:app --reload --port 8090
 ```
+
+**Database migrations:**
+```bash
+set -a
+source .env.local
+set +a
+uv run alembic upgrade head
+```
+
+### Admin Tools
+
+- `/admin/problems`: Edit problem descriptions, starter code, solution, and tests.
+- `/admin/import`: Manually create/import a LeetCode problem with live preview.
 
 ## Deployment
 
@@ -241,9 +273,9 @@ GITHUB_CLIENT_SECRET=<same as Railway>
 GOOGLE_CLIENT_ID=<same as Railway>
 GOOGLE_CLIENT_SECRET=<same as Railway>
 APP_URL=http://localhost:3000
-API_URL=http://localhost:8000/api
-NEXT_PUBLIC_API_URL=http://localhost:8000
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+API_URL=http://localhost:8090/api
+NEXT_PUBLIC_API_URL=http://localhost:8090
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8090
 ```
 
 ## Features
@@ -256,6 +288,12 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
 - 🔗 **Wiki-style links** automatically resolved
 - 📊 **Organized navigation** by category
 - ⚡ **Static site generation** for fast loading
+
+### Admin Workflow
+
+- Manual import with live preview (description, tags, starter code, solution, tests)
+- Reference solution runner for generating expected outputs
+- Test case management (hidden/public, time limits)
 
 ## Curriculum Highlights
 

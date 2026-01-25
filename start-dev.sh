@@ -40,8 +40,8 @@ echo ""
 echo "🎯 Starting services..."
 echo ""
 echo "Frontend: http://localhost:6090"
-echo "Backend:  http://localhost:8000"
-echo "API Docs: http://localhost:8000/docs"
+echo "Backend:  http://localhost:8090"
+echo "API Docs: http://localhost:8090/docs"
 echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
@@ -54,7 +54,7 @@ unset NEXT_STATIC_EXPORT
 (cd site && PORT=6090 npm run dev) &
 FRONTEND_PID=$!
 
-uv run uvicorn api.index:app --reload --port 8000 &
+uv run uvicorn api.index:app --reload --port 8090 &
 BACKEND_PID=$!
 
 # Wait for Ctrl+C

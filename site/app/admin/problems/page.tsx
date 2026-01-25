@@ -115,6 +115,12 @@ export default function AdminProblemsPage() {
   const [referenceSaving, setReferenceSaving] = useState(false)
   const [starterSaving, setStarterSaving] = useState(false)
 
+  // LeetCode import preview
+  const [importSlug, setImportSlug] = useState('')
+  const [importDetail, setImportDetail] = useState<ProblemDetail | null>(null)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+
   // Test cases
   const [testsLoading, setTestsLoading] = useState(false)
   const [testCases, setTestCases] = useState<EditableTestCase[]>([])
@@ -134,6 +140,54 @@ export default function AdminProblemsPage() {
   const adminHeaders = useMemo((): Record<string, string> => {
     return adminSecret ? { 'X-Admin-Secret': adminSecret } : {}
   }, [adminSecret])
+
+  const loadImportPreview = useCallback(async () => {
+    const normalized = importSlug.trim().toLowerCase()
+    if (!normalized) {
+      setImportError('LeetCode slug is required.')
+      return
+    }
+    setImportLoading(true)
+    setImportError(null)
+    setImportDetail(null)
+    try {
+      const detail = await apiRequest<ProblemDetail>(
+        `/api/problem-details/${encodeURIComponent(normalized)}?refresh=true`
+      )
+      setImportDetail(detail)
+    } catch (err) {
+      const text = err instanceof Error ? err.message : 'Failed to import problem'
+      setImportError(text)
+    } finally {
+      setImportLoading(false)
+    }
+  }, [importSlug])
+
+  const useImportPreview = useCallback(() => {
+    if (!importDetail) return
+    const problemId = `lc-${importDetail.slug}`
+    setSelectedProblem({
+      problem_id: problemId,
+      slug: importDetail.slug,
+      title: importDetail.title || null,
+      difficulty: importDetail.difficulty || null,
+      has_description: Boolean(importDetail.description_html),
+      has_solution: false,
+      has_starter_code: false,
+      test_case_count: 0,
+      optimal_time_complexity: null,
+      optimal_space_complexity: null,
+    })
+    setTitle(importDetail.title || '')
+    setDifficulty(importDetail.difficulty || '')
+    setDescriptionHtml(importDetail.description_html || '')
+    setReferenceCode('')
+    setStarterCode('')
+    setTimeComplexity('')
+    setSpaceComplexity('')
+    setTestCases([])
+    setMessage({ type: 'info', text: 'Loaded preview into editor. Save Description to persist.' })
+  }, [importDetail])
 
   // Load problem list
   const loadProblems = useCallback(async () => {
@@ -523,6 +577,53 @@ export default function AdminProblemsPage() {
           </Button>
         </div>
         {message && <div className={`text-sm ${messageColor}`}>{message.text}</div>}
+      </div>
+
+      {/* LeetCode Import Preview */}
+      <div className="border border-border rounded-lg p-4 bg-card space-y-4">
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-foreground">LeetCode Slug</label>
+          <div className="flex flex-wrap gap-3 items-center">
+            <Input
+              className="min-w-[240px]"
+              placeholder="kth-smallest-element-in-a-bst"
+              value={importSlug}
+              onChange={e => setImportSlug(e.target.value)}
+            />
+            <Button onClick={loadImportPreview} disabled={importLoading}>
+              {importLoading ? 'Importing...' : 'Preview'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={useImportPreview}
+              disabled={!importDetail}
+            >
+              Load Into Editor
+            </Button>
+          </div>
+        </div>
+
+        {importError && <div className="text-sm text-red-500">{importError}</div>}
+
+        {importDetail && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="font-medium text-foreground">{importDetail.title}</span>
+              <span className="text-muted-foreground">({importDetail.slug})</span>
+              {importDetail.difficulty && (
+                <span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs">
+                  {importDetail.difficulty}
+                </span>
+              )}
+            </div>
+            <div className="max-h-[260px] overflow-auto rounded border border-border bg-background p-3">
+              <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: importDetail.description_html }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[350px_1fr]">

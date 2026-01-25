@@ -108,3 +108,11 @@ class LogisticRegression:
 ```
 
 ---
+
+## Deep dive links
+
+- **[[30-ML-Fundamentals/Guide/Math Foundations (Guide)]]**
+- **[[30-ML-Fundamentals/Guide/Classical Machine Learning (Guide)]]**
+- **[[30-ML-Fundamentals/Concepts Tracker#Math]]**
+- **[[30-ML-Fundamentals/Concepts Tracker#Classical ML]]**
+- **[[00-Reference/ML Cheat Sheet]]**
